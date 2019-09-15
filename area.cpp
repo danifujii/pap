@@ -6,14 +6,14 @@ using namespace std;
 typedef pair<int, int> cols;
 
 pair<int, int> kadane_1d(vector<int> vals, int lim) {
-    for (int i = 0; i < vals.size(); i++) cout << vals[i] << " ";
     int best, curr; best = curr = 0;
     int best_length = 0, length = 0;
 
     for (int i = 0; i < vals.size(); i++) {
         curr = curr + vals[i];
         if (curr > lim) {
-            best = curr - vals[i]; best_length = length;
+            if (curr-vals[i] <= lim)
+                best = curr - vals[i]; best_length = length;
             curr = vals[i];
             length = 1;
         } else {
@@ -65,18 +65,6 @@ pair<int, int> get_best_area_price(vector<vector<int>> matrix, int lim) {
     return pair<int, int>(best_area, best_price);
 }
 
-vector<int> split_str(string str) {
-    vector<int> vals;
-    int i = 0, prev_i = 0;
-    while (prev_i >= 0) {
-        i = str.find(" ", prev_i);
-        vals.push_back(stoi(str.substr(prev_i, i-prev_i)));
-        cout << str.substr(prev_i, i-prev_i) << endl;
-        prev_i = i > 0 ? i + 1 : i;
-    }
-    return vals;
-}
-
 int main(int argc, char const *argv[])
 {
     // improve perf
@@ -99,6 +87,8 @@ int main(int argc, char const *argv[])
             matrix.push_back(row);
         }
         pair<int, int> sol = get_best_area_price(matrix, k);
-        cout << "Case #" << t+1 << ":" << sol.first << " " << sol.second;
+        if (sol.first <= 0)
+            cout << "Case #" << t+1 << ": " << 0 << " " << 0 << "\n";
+        else cout << "Case #" << t+1 << ": " << sol.first << " " << sol.second << "\n";
     }
 }
