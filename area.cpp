@@ -6,15 +6,19 @@ using namespace std;
 typedef long long ll;
 
 pair<ll, ll> kadane_1d(vector<ll> vals, ll lim, int top, int bottom) {
-    ll best, curr; best = curr = 0;
+    ll best, curr; best = -1; curr = -1;
     int best_length = 0, length = 0;
 
     for (int i = 0; i < vals.size(); i++) {
-        if (length > best_length) {
+        if (length >= best_length) {
+            if (length == best_length && best >= 0 && curr >= 0)
+                best = min(best, curr);
+            else best = curr;
             best_length = length;
-            best = curr;
         }
-        curr = curr + vals[i];
+        if (curr > 0)
+            curr = curr + vals[i];
+        else curr = vals[i];
         length += 1;
         if (curr > lim) {
             // try fixing it by removing start elements
@@ -25,9 +29,12 @@ pair<ll, ll> kadane_1d(vector<ll> vals, ll lim, int top, int bottom) {
             }
         }
     }
-    if (length > best_length) {
+    // Check for last element
+    if (length >= best_length) {
+        if (length == best_length && best >= 0 && curr >= 0)
+            best = min(best, curr);
+        else best = curr;
         best_length = length;
-        best = curr;
     }
     return pair<ll, ll>(best, best_length);
 }
@@ -56,13 +63,13 @@ pair<ll, ll> get_best_area_price(vector<vector<ll>> matrix, ll lim) {
 
             auto sol = kadane_1d(range_sum, lim, top, bottom);
             auto sol_area = get_area(sol.second, top, bottom);
-            if (sol.first <= 0) continue; // no valid area for these rows
+            if (sol.first < 0) continue; // no valid area for these rows
 
             if (best_area <= sol_area) {
-                best_area = sol_area;
-                if (best_area == sol_area)
+                if (best_area == sol_area) {  // best yet is the same we found, then we only update if the price is better
                     if (sol.first < best_price) best_price = sol.first;
-                else best_price = sol.first;
+                } else best_price = sol.first;
+                best_area = sol_area;
             }
         }
     }
