@@ -1,10 +1,12 @@
 #include <iostream>
 #include <set>
+#include <vector>
 
 using namespace std;
 
 typedef pair<int, int> ii;
 typedef set<ii> sii;
+typedef vector<bool> vb;
 
 bool b1[1000][1000];
 bool b2[1000][1000];
@@ -12,18 +14,27 @@ bool b2[1000][1000];
 ii left_top_corner, left_bottom_corner, right_bottom_corner, right_top_corner;
 sii visited_b1, visited_b2;
 
-sii neighbors(ii coord, int max_width, int max_height) {
+sii neighbors(ii coord, int max_width, int max_height, sii nodes) {
     sii rv;
-    if (coord.first > 0) rv.insert(ii(coord.first-1, coord.second));
-    if (coord.first < max_width) rv.insert(ii(coord.first+1, coord.second));
-    if (coord.second > 0) rv.insert(ii(coord.first, coord.second-1));
-    if (coord.second < max_height) rv.insert(ii(coord.first, coord.second+1));
+
+    ii left = ii(coord.first-1, coord.second);
+    if (coord.first > 0 && nodes.find(left) != nodes.end()) rv.insert(left);
+
+    ii right = ii(coord.first+1, coord.second);
+    if (coord.first < max_width && nodes.find(right) != nodes.end()) rv.insert(right);
+
+    ii bottom = ii(coord.first, coord.second-1);
+    if (coord.second > 0 && nodes.find(bottom) != nodes.end()) rv.insert(bottom);
+
+    ii top = ii(coord.first, coord.second+1);
+    if (coord.second < max_height && nodes.find(top) != nodes.end()) rv.insert(top);
+
     return rv;
 }
 
 void update_bounds(ii coord) {
     if (coord.first < left_top_corner.first) left_top_corner.first = coord.first;
-    if (coord.second < left_top_corner.second) left_top_corner.second = coord.first;
+    if (coord.second < left_top_corner.second) left_top_corner.second = coord.second;
     if (coord.first < left_bottom_corner.first) left_bottom_corner.first = coord.first;
     if (coord.second > left_bottom_corner.second) left_bottom_corner.second = coord.second;
     if (coord.first > right_bottom_corner.first) right_bottom_corner.first = coord.first;
@@ -37,15 +48,85 @@ void reset_bounds() {
     left_top_corner.second = 1005; left_bottom_corner.second = -1; right_bottom_corner.second = -1; right_top_corner.second = 1005;
 }
 
-void dfs(ii root, sii visited, sii connected_component, int max_width, int max_height) {
-    if (visited.find(root) != visited.end()) return;
+void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max_height, sii nodes) {
+    if (visited->find(root) != visited->end()) return;
 
-    visited.insert(root);
-    connected_component.insert(root);
+    visited->insert(root);
+    connected_component->insert(root);
     update_bounds(root);
-    for (ii n: neighbors(root, max_width, max_height)) {
-        dfs(n, visited, connected_component, max_width, max_height);
+    for (ii n: neighbors(root, max_width, max_height, nodes)) {
+        dfs(n, visited, connected_component, max_width, max_height, nodes);
     }
+}
+
+vector<vb> flip_horizontal(vector<vb> mat) {
+    vector<vb> flipped;
+    int row_length = mat[0].size();
+    for (int r = 0; r < mat.size(); r++) {
+        vb flipped_row(row_length);
+        for (int c = 0; c < row_length; c++) flipped_row[row_length-c-1] = mat[r][c];
+        flipped.push_back(flipped_row);
+    }
+    return flipped;
+}
+
+vector<vb> flip_vertical(vector<vb> mat) {
+    vector<vb> flipped(mat.size());
+    for (int i = 0; i < mat.size(); i++) flipped[i] = vb(mat[0].size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++) flipped[mat.size()-r-1][c] = mat[r][c];
+    return flipped;
+}
+
+vector<vb> flip_90(vector<vb> mat) {
+    vector<vb> flipped(mat[0].size());
+    for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            flipped[c][mat.size()-r-1] = mat[r][c];
+    return flipped;
+}
+
+vector<vb> flip_270(vector<vb> mat) {
+    vector<vb> flipped(mat[0].size());
+    for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            flipped[mat[0].size()-c-1][r] = mat[r][c];
+    return flipped;
+}
+
+string get_matrix_canonical(vector<vb> mat) {
+    string mat_repr = "";
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            mat_repr += (mat[r][c]) ? "1" : "0";
+    return mat_repr;
+}
+
+string get_canonical(sii component) {
+    if (component.size() == 1) return "1";
+    if (component.size() == 2) return "11";
+
+    vector<vb> matrix;
+    for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
+        vb row;
+        for (int c = left_top_corner.first; c <= right_top_corner.first; c++) {
+            ii coord(c, r);
+            row.push_back(component.find(coord) != component.end());
+        }
+        matrix.push_back(row);
+    }
+    return get_matrix_canonical(matrix);
+}
+
+bool components_equal(set<string> components_b1, set<string> components_b2) {
+    for (string component_b1: components_b1) {
+        if (components_b2.find(component_b1) != components_b2.end()) {
+            components_b2.erase(component_b1);
+        } else return false;
+    }
+    return components_b2.empty() ? true : false;
 }
 
 bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
@@ -59,28 +140,26 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         } else b2[c][r] = false;
     }
     visited_b1.clear(); visited_b2.clear();
+    set<string> canonical_comps_b1, canonical_comps_b2;
 
     for (ii b1_item: items_b1) {
         sii connected_component;
         reset_bounds();
-        dfs(b1_item, visited_b1, connected_component, max_width, max_height);
-        for (ii item: connected_component) {
-            cout << item.first << "," << item.second << " - ";
-        }
-        cout << endl;
+        dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
+        if (connected_component.empty()) continue;
+        canonical_comps_b1.insert(get_canonical(connected_component));
     }
 
     for (ii b2_item: items_b2) {
         sii connected_component;
         reset_bounds();
-        dfs(b2_item, visited_b2, connected_component, max_width, max_height);
+        dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
+        if (connected_component.empty()) continue;
+        canonical_comps_b2.insert(get_canonical(connected_component));
     }
 
-    // For each board:
-        // Reset bounds for each component
-        // Get connected components by DFS for each item, keep visited items
-        // Get canonical representation of the connected component
-    // Compare canonical representations
+    if (canonical_comps_b1.size() != canonical_comps_b2.size()) return false;
+    return components_equal(canonical_comps_b1, canonical_comps_b2);
 }
 
 int main()
@@ -91,7 +170,7 @@ int main()
 
     int tests, w, h, pieces, x, y;
     cin >> tests;
-    while (tests) {
+    while (tests > 0) {
         cin >> w >> h >> pieces;
 
         sii items_b1;
