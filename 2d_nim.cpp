@@ -6,6 +6,7 @@ using namespace std;
 
 typedef pair<int, int> ii;
 typedef set<ii> sii;
+typedef vector<bool> vb;
 
 bool b1[1000][1000];
 bool b2[1000][1000];
@@ -58,7 +59,26 @@ void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max
     }
 }
 
-string get_matrix_canonical(vector<vector<bool>> mat) {
+vector<vb> flip_horizontal(vector<vb> mat) {
+    vector<vb> flipped;
+    int row_length = mat[0].size();
+    for (int r = 0; r < mat.size(); r++) {
+        vb flipped_row(row_length);
+        for (int c = 0; c < row_length; c++) flipped_row[row_length-c-1] = mat[r][c];
+        flipped.push_back(flipped_row);
+    }
+    return flipped;
+}
+
+vector<vb> flip_vertical(vector<vb> mat) {
+    vector<vb> flipped(mat.size());
+    for (int i = 0; i < mat.size(); i++) flipped[i] = vb(mat[0].size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++) flipped[mat.size()-r-1][c] = mat[r][c];
+    return flipped;
+}
+
+string get_matrix_canonical(vector<vb> mat) {
     string mat_repr = "";
     for (int r = 0; r < mat.size(); r++)
         for (int c = 0; c < mat[0].size(); c++)
@@ -70,9 +90,9 @@ string get_canonical(sii component) {
     if (component.size() == 1) return "1";
     if (component.size() == 2) return "11";
 
-    vector<vector<bool>> matrix;
+    vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
-        vector<bool> row;
+        vb row;
         for (int c = left_top_corner.first; c <= right_top_corner.first; c++) {
             ii coord(c, r);
             row.push_back(component.find(coord) != component.end());
@@ -102,13 +122,14 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         } else b2[c][r] = false;
     }
     visited_b1.clear(); visited_b2.clear();
+    set<string> canonical_comps_b1, canonical_comps_b2;
 
     for (ii b1_item: items_b1) {
         sii connected_component;
         reset_bounds();
         dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
         if (connected_component.empty()) continue;
-        string mat_can = get_canonical(connected_component);
+        canonical_comps_b1.insert(get_canonical(connected_component));
     }
 
     for (ii b2_item: items_b2) {
@@ -116,14 +137,11 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         reset_bounds();
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
         if (connected_component.empty()) continue;
-        string mat_can = get_canonical(connected_component);
+        canonical_comps_b2.insert(get_canonical(connected_component));
     }
 
-    // For each board:
-        // Reset bounds for each component
-        // Get connected components by DFS for each item, keep visited items
-        // Get canonical representation of the connected component
-    // Compare canonical representations
+    if (canonical_comps_b1.size() != canonical_comps_b2.size()) return false;
+    return components_equal(canonical_comps_b1, canonical_comps_b2);
 }
 
 int main()
