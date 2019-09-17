@@ -78,6 +78,24 @@ vector<vb> flip_vertical(vector<vb> mat) {
     return flipped;
 }
 
+vector<vb> flip_90(vector<vb> mat) {
+    vector<vb> flipped(mat[0].size());
+    for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            flipped[c][mat.size()-r-1] = mat[r][c];
+    return flipped;
+}
+
+vector<vb> flip_270(vector<vb> mat) {
+    vector<vb> flipped(mat[0].size());
+    for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            flipped[mat[0].size()-c-1][r] = mat[r][c];
+    return flipped;
+}
+
 string get_matrix_canonical(vector<vb> mat) {
     string mat_repr = "";
     for (int r = 0; r < mat.size(); r++)
