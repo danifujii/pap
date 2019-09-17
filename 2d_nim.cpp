@@ -1,5 +1,6 @@
 #include <iostream>
 #include <set>
+#include <vector>
 
 using namespace std;
 
@@ -57,6 +58,39 @@ void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max
     }
 }
 
+string get_matrix_canonical(vector<vector<bool>> mat) {
+    string mat_repr = "";
+    for (int r = 0; r < mat.size(); r++)
+        for (int c = 0; c < mat[0].size(); c++)
+            mat_repr += (mat[r][c]) ? "1" : "0";
+    return mat_repr;
+}
+
+string get_canonical(sii component) {
+    if (component.size() == 1) return "1";
+    if (component.size() == 2) return "11";
+
+    vector<vector<bool>> matrix;
+    for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
+        vector<bool> row;
+        for (int c = left_top_corner.first; c <= right_top_corner.first; c++) {
+            ii coord(c, r);
+            row.push_back(component.find(coord) != component.end());
+        }
+        matrix.push_back(row);
+    }
+    return get_matrix_canonical(matrix);
+}
+
+bool components_equal(set<string> components_b1, set<string> components_b2) {
+    for (string component_b1: components_b1) {
+        if (components_b2.find(component_b1) != components_b2.end()) {
+            components_b2.erase(component_b1);
+        } else return false;
+    }
+    return components_b2.empty() ? true : false;
+}
+
 bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
     // Intialization
     for (int c = 0; c < 1000; c++) for (int r = 0; r < 1000; r++) {
@@ -74,12 +108,15 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         reset_bounds();
         dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
         if (connected_component.empty()) continue;
+        string mat_can = get_canonical(connected_component);
     }
 
     for (ii b2_item: items_b2) {
         sii connected_component;
         reset_bounds();
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
+        if (connected_component.empty()) continue;
+        string mat_can = get_canonical(connected_component);
     }
 
     // For each board:
