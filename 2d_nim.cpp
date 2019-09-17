@@ -12,18 +12,27 @@ bool b2[1000][1000];
 ii left_top_corner, left_bottom_corner, right_bottom_corner, right_top_corner;
 sii visited_b1, visited_b2;
 
-sii neighbors(ii coord, int max_width, int max_height) {
+sii neighbors(ii coord, int max_width, int max_height, sii nodes) {
     sii rv;
-    if (coord.first > 0) rv.insert(ii(coord.first-1, coord.second));
-    if (coord.first < max_width) rv.insert(ii(coord.first+1, coord.second));
-    if (coord.second > 0) rv.insert(ii(coord.first, coord.second-1));
-    if (coord.second < max_height) rv.insert(ii(coord.first, coord.second+1));
+
+    ii left = ii(coord.first-1, coord.second);
+    if (coord.first > 0 && nodes.find(left) != nodes.end()) rv.insert(left);
+
+    ii right = ii(coord.first+1, coord.second);
+    if (coord.first < max_width && nodes.find(right) != nodes.end()) rv.insert(right);
+
+    ii bottom = ii(coord.first, coord.second-1);
+    if (coord.second > 0 && nodes.find(bottom) != nodes.end()) rv.insert(bottom);
+
+    ii top = ii(coord.first, coord.second+1);
+    if (coord.second < max_height && nodes.find(top) != nodes.end()) rv.insert(top);
+
     return rv;
 }
 
 void update_bounds(ii coord) {
     if (coord.first < left_top_corner.first) left_top_corner.first = coord.first;
-    if (coord.second < left_top_corner.second) left_top_corner.second = coord.first;
+    if (coord.second < left_top_corner.second) left_top_corner.second = coord.second;
     if (coord.first < left_bottom_corner.first) left_bottom_corner.first = coord.first;
     if (coord.second > left_bottom_corner.second) left_bottom_corner.second = coord.second;
     if (coord.first > right_bottom_corner.first) right_bottom_corner.first = coord.first;
@@ -37,14 +46,14 @@ void reset_bounds() {
     left_top_corner.second = 1005; left_bottom_corner.second = -1; right_bottom_corner.second = -1; right_top_corner.second = 1005;
 }
 
-void dfs(ii root, sii visited, sii connected_component, int max_width, int max_height) {
-    if (visited.find(root) != visited.end()) return;
+void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max_height, sii nodes) {
+    if (visited->find(root) != visited->end()) return;
 
-    visited.insert(root);
-    connected_component.insert(root);
+    visited->insert(root);
+    connected_component->insert(root);
     update_bounds(root);
-    for (ii n: neighbors(root, max_width, max_height)) {
-        dfs(n, visited, connected_component, max_width, max_height);
+    for (ii n: neighbors(root, max_width, max_height, nodes)) {
+        dfs(n, visited, connected_component, max_width, max_height, nodes);
     }
 }
 
@@ -63,17 +72,14 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
     for (ii b1_item: items_b1) {
         sii connected_component;
         reset_bounds();
-        dfs(b1_item, visited_b1, connected_component, max_width, max_height);
-        for (ii item: connected_component) {
-            cout << item.first << "," << item.second << " - ";
-        }
-        cout << endl;
+        dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
+        if (connected_component.empty()) continue;
     }
 
     for (ii b2_item: items_b2) {
         sii connected_component;
         reset_bounds();
-        dfs(b2_item, visited_b2, connected_component, max_width, max_height);
+        dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
     }
 
     // For each board:
@@ -91,7 +97,7 @@ int main()
 
     int tests, w, h, pieces, x, y;
     cin >> tests;
-    while (tests) {
+    while (tests > 0) {
         cin >> w >> h >> pieces;
 
         sii items_b1;
