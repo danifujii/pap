@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <set>
 #include <vector>
 
@@ -8,44 +9,28 @@ typedef pair<int, int> ii;
 typedef set<ii> sii;
 typedef vector<bool> vb;
 
-bool b1[1000][1000];
-bool b2[1000][1000];
-
-ii left_top_corner, left_bottom_corner, right_bottom_corner, right_top_corner;
+ii left_top_corner, right_bottom_corner;
 sii visited_b1, visited_b2;
 
-sii neighbors(ii coord, int max_width, int max_height, sii nodes) {
+sii neighbors(ii coord, int max_width, int max_height) {
     sii rv;
-
-    ii left = ii(coord.first-1, coord.second);
-    if (coord.first > 0 && nodes.find(left) != nodes.end()) rv.insert(left);
-
-    ii right = ii(coord.first+1, coord.second);
-    if (coord.first < max_width && nodes.find(right) != nodes.end()) rv.insert(right);
-
-    ii bottom = ii(coord.first, coord.second-1);
-    if (coord.second > 0 && nodes.find(bottom) != nodes.end()) rv.insert(bottom);
-
-    ii top = ii(coord.first, coord.second+1);
-    if (coord.second < max_height && nodes.find(top) != nodes.end()) rv.insert(top);
-
+    if (coord.first > 0) rv.insert(ii(coord.first-1, coord.second));
+    if (coord.first < max_width) rv.insert(ii(coord.first+1, coord.second));
+    if (coord.second > 0) rv.insert(ii(coord.first, coord.second-1));
+    if (coord.second < max_height) rv.insert(ii(coord.first, coord.second+1));
     return rv;
 }
 
 void update_bounds(ii coord) {
     if (coord.first < left_top_corner.first) left_top_corner.first = coord.first;
     if (coord.second < left_top_corner.second) left_top_corner.second = coord.second;
-    if (coord.first < left_bottom_corner.first) left_bottom_corner.first = coord.first;
-    if (coord.second > left_bottom_corner.second) left_bottom_corner.second = coord.second;
     if (coord.first > right_bottom_corner.first) right_bottom_corner.first = coord.first;
     if (coord.second > right_bottom_corner.second) right_bottom_corner.second = coord.second;
-    if (coord.first > right_top_corner.first) right_top_corner.first = coord.first;
-    if (coord.second < right_top_corner.second) right_top_corner.second = coord.second;
 }
 
 void reset_bounds() {
-    left_top_corner.first = 1005; left_bottom_corner.first = 1005; right_bottom_corner.first = -1; right_top_corner.first = -1;
-    left_top_corner.second = 1005; left_bottom_corner.second = -1; right_bottom_corner.second = -1; right_top_corner.second = 1005;
+    left_top_corner.first = 1005; right_bottom_corner.first = -1;
+    left_top_corner.second = 1005; right_bottom_corner.second = -1;
 }
 
 void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max_height, sii nodes) {
@@ -54,8 +39,11 @@ void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max
     visited->insert(root);
     connected_component->insert(root);
     update_bounds(root);
-    for (ii n: neighbors(root, max_width, max_height, nodes)) {
-        dfs(n, visited, connected_component, max_width, max_height, nodes);
+
+    for (ii n: neighbors(root, max_width, max_height)) {
+        if (nodes.find(n) != nodes.end()) {
+            dfs(n, visited, connected_component, max_width, max_height, nodes);
+        }
     }
 }
 
@@ -111,13 +99,25 @@ string get_canonical(sii component) {
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
         vb row;
-        for (int c = left_top_corner.first; c <= right_top_corner.first; c++) {
+        for (int c = left_top_corner.first; c <= right_bottom_corner.first; c++) {
             ii coord(c, r);
             row.push_back(component.find(coord) != component.end());
         }
         matrix.push_back(row);
     }
-    return get_matrix_canonical(matrix);
+
+    if (matrix.size() == 1 || matrix[0].size() == 1)
+        return get_matrix_canonical(matrix);
+
+    string min_canonical = get_matrix_canonical(matrix);
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(matrix)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(matrix)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_90(matrix)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_vertical(matrix))));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_270(matrix)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_270(matrix))));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_90(matrix))));
+    return min_canonical;
 }
 
 bool components_equal(set<string> components_b1, set<string> components_b2) {
@@ -131,28 +131,22 @@ bool components_equal(set<string> components_b1, set<string> components_b2) {
 
 bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
     // Intialization
-    for (int c = 0; c < 1000; c++) for (int r = 0; r < 1000; r++) {
-        if (items_b1.find(ii(r, c)) != items_b1.end()) {
-            b1[c][r] = true;
-        } else b1[c][r] = false;
-        if (items_b2.find(ii(r, c)) != items_b2.end()) {
-            b2[c][r] = true;
-        } else b2[c][r] = false;
-    }
     visited_b1.clear(); visited_b2.clear();
     set<string> canonical_comps_b1, canonical_comps_b2;
+    sii connected_component;
 
     for (ii b1_item: items_b1) {
-        sii connected_component;
+        connected_component.clear();
         reset_bounds();
+        if (visited_b1.find(b1_item) != visited_b1.end()) continue;
         dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
-        if (connected_component.empty()) continue;
         canonical_comps_b1.insert(get_canonical(connected_component));
     }
 
     for (ii b2_item: items_b2) {
-        sii connected_component;
+        connected_component.clear();
         reset_bounds();
+        if (visited_b2.find(b2_item) != visited_b2.end()) continue;
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
         if (connected_component.empty()) continue;
         canonical_comps_b2.insert(get_canonical(connected_component));
