@@ -93,9 +93,6 @@ string get_matrix_canonical(vector<vb> mat) {
 }
 
 string get_canonical(sii component) {
-    if (component.size() == 1) return "1";
-    if (component.size() == 2) return "11";
-
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
         vb row;
@@ -106,6 +103,7 @@ string get_canonical(sii component) {
         matrix.push_back(row);
     }
 
+    // Single row/column components are simply just a line of 1s in every variation
     if (matrix.size() == 1 || matrix[0].size() == 1)
         return get_matrix_canonical(matrix);
 
@@ -126,7 +124,7 @@ bool components_equal(set<string> components_b1, set<string> components_b2) {
             components_b2.erase(component_b1);
         } else return false;
     }
-    return components_b2.empty() ? true : false;
+    return components_b2.empty();
 }
 
 bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
@@ -148,7 +146,6 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         reset_bounds();
         if (visited_b2.find(b2_item) != visited_b2.end()) continue;
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
-        if (connected_component.empty()) continue;
         canonical_comps_b2.insert(get_canonical(connected_component));
     }
 
