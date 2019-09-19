@@ -33,7 +33,7 @@ void reset_bounds() {
     left_top_corner.second = 1005; right_bottom_corner.second = -1;
 }
 
-void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max_height, sii nodes) {
+void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max_height, sii & nodes) {
     if (visited->find(root) != visited->end()) return;
 
     visited->insert(root);
@@ -73,7 +73,7 @@ vector<vb>* flip_vertical(vector<vb>* mat) {
     return mat;
 }
 
-vector<vb> flip_90(vector<vb> mat) {
+vector<vb> flip_90(vector<vb> & mat) {
     vector<vb> flipped(mat[0].size());
     for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
     for (int r = 0; r < mat.size(); r++)
@@ -84,13 +84,14 @@ vector<vb> flip_90(vector<vb> mat) {
 
 string get_matrix_canonical(vector<vb>* mat) {
     string mat_repr = "";
-    for (int r = 0; r < mat->size(); r++)
+    for (int r = 0; r < mat->size(); r++) {
         for (int c = 0; c < mat->at(0).size(); c++)
             mat_repr += (mat->at(r)[c]) ? "1" : "0";
+    }
     return mat_repr;
 }
 
-string get_canonical(sii component) {
+string get_canonical(sii & component) {
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
         vb row, row_t;
@@ -123,7 +124,7 @@ string get_canonical(sii component) {
     return min_canonical;
 }
 
-bool components_equal(set<string> components_b1, set<string> components_b2) {
+bool components_equal(set<string> & components_b1, set<string> & components_b2) {
     for (string component_b1: components_b1) {
         if (components_b2.find(component_b1) != components_b2.end()) {
             components_b2.erase(component_b1);
@@ -132,7 +133,7 @@ bool components_equal(set<string> components_b1, set<string> components_b2) {
     return components_b2.empty();
 }
 
-bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
+bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
     // Intialization
     visited_b1.clear(); visited_b2.clear();
     set<string> canonical_comps_b1, canonical_comps_b2;
@@ -154,8 +155,7 @@ bool equivalent(sii items_b1, sii items_b2, int max_width, int max_height) {
         canonical_comps_b2.insert(get_canonical(connected_component));
     }
 
-    if (canonical_comps_b1.size() != canonical_comps_b2.size()) return false;
-    return components_equal(canonical_comps_b1, canonical_comps_b2);
+    return canonical_comps_b1 == canonical_comps_b2;
 }
 
 int main()
