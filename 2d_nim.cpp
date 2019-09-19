@@ -47,23 +47,30 @@ void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max
     }
 }
 
-vector<vb> flip_horizontal(vector<vb> mat) {
-    vector<vb> flipped;
-    int row_length = mat[0].size();
-    for (int r = 0; r < mat.size(); r++) {
-        vb flipped_row(row_length);
-        for (int c = 0; c < row_length; c++) flipped_row[row_length-c-1] = mat[r][c];
-        flipped.push_back(flipped_row);
+vector<vb>* flip_horizontal(vector<vb>* mat) {
+    int row_length = mat->at(0).size();
+    int middle = row_length%2 == 0 ? row_length/2 : row_length/2+1;
+
+    for (int r = 0; r < mat->size(); r++) {
+        for (int c = 0; c < middle; c++) {
+            bool aux = mat->at(r)[row_length-c-1];
+            mat->at(r)[row_length-c-1] = mat->at(r)[c];
+            mat->at(r)[c] = aux;
+        }
     }
-    return flipped;
+    return mat;
 }
 
-vector<vb> flip_vertical(vector<vb> mat) {
-    vector<vb> flipped(mat.size());
-    for (int i = 0; i < mat.size(); i++) flipped[i] = vb(mat[0].size());
-    for (int r = 0; r < mat.size(); r++)
-        for (int c = 0; c < mat[0].size(); c++) flipped[mat.size()-r-1][c] = mat[r][c];
-    return flipped;
+vector<vb>* flip_vertical(vector<vb>* mat) {
+    int middle = mat->size()%2 == 0 ? mat->size()/2 : mat->size()/2+1;
+
+    for (int r = 0; r < middle; r++)
+        for (int c = 0; c < mat->at(0).size(); c++) {
+            bool aux = mat->at(mat->size()-r-1)[c];
+            mat->at(mat->size()-r-1)[c] = mat->at(r)[c];
+            mat->at(r)[c] = aux;
+        }
+    return mat;
 }
 
 vector<vb> flip_90(vector<vb> mat) {
@@ -75,46 +82,44 @@ vector<vb> flip_90(vector<vb> mat) {
     return flipped;
 }
 
-vector<vb> flip_270(vector<vb> mat) {
-    vector<vb> flipped(mat[0].size());
-    for (int i = 0; i < mat[0].size(); i++) flipped[i] = vb(mat.size());
-    for (int r = 0; r < mat.size(); r++)
-        for (int c = 0; c < mat[0].size(); c++)
-            flipped[mat[0].size()-c-1][r] = mat[r][c];
-    return flipped;
-}
-
-string get_matrix_canonical(vector<vb> mat) {
+string get_matrix_canonical(vector<vb>* mat) {
     string mat_repr = "";
-    for (int r = 0; r < mat.size(); r++)
-        for (int c = 0; c < mat[0].size(); c++)
-            mat_repr += (mat[r][c]) ? "1" : "0";
+    for (int r = 0; r < mat->size(); r++)
+        for (int c = 0; c < mat->at(0).size(); c++)
+            mat_repr += (mat->at(r)[c]) ? "1" : "0";
     return mat_repr;
 }
 
 string get_canonical(sii component) {
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
-        vb row;
+        vb row, row_t;
         for (int c = left_top_corner.first; c <= right_bottom_corner.first; c++) {
             ii coord(c, r);
             row.push_back(component.find(coord) != component.end());
+            row_t.push_back(component.find(coord) != component.end());
         }
         matrix.push_back(row);
     }
 
+    string min_canonical = get_matrix_canonical(&matrix);
     // Single row/column components are simply just a line of 1s in every variation
     if (matrix.size() == 1 || matrix[0].size() == 1)
-        return get_matrix_canonical(matrix);
+        return min_canonical;
 
-    string min_canonical = get_matrix_canonical(matrix);
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(matrix)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(matrix)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_90(matrix)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_vertical(matrix))));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_270(matrix)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_270(matrix))));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(flip_90(matrix))));
+    // To avoid complicating myself later on, building rotated after matrix has been changed
+    vector<vb> rotated = flip_90(matrix);
+
+    // Keep dimensions
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&matrix)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&matrix)));  // 180 degrees
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&matrix)));  // flip horizontal of og matrix
+
+    // Flip comuns size by rows size
+    min_canonical = min(min_canonical, get_matrix_canonical(&rotated));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&rotated)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&rotated)));
+    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&rotated)));  // 270 degrees
     return min_canonical;
 }
 
