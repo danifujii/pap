@@ -82,31 +82,30 @@ vector<vb> flip_90(vector<vb> & mat) {
     return flipped;
 }
 
-string get_matrix_canonical(vector<vb>* mat) {
-    string mat_repr = "";
+vector<ii> get_matrix_canonical(vector<vb>* mat) {
+    vector<ii> rv;
     for (int r = 0; r < mat->size(); r++) {
         for (int c = 0; c < mat->at(0).size(); c++)
-            mat_repr += (mat->at(r)[c]) ? "1" : "0";
+            if (mat->at(r)[c]) {
+                rv.push_back(ii(r, c));
+            }
     }
-    return mat_repr;
+    sort(rv.begin(), rv.end());
+    return rv;
 }
 
-string get_canonical(sii & component) {
+vector<ii> get_canonical(sii & component) {
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
-        vb row, row_t;
+        vb row;
         for (int c = left_top_corner.first; c <= right_bottom_corner.first; c++) {
             ii coord(c, r);
             row.push_back(component.find(coord) != component.end());
-            row_t.push_back(component.find(coord) != component.end());
         }
         matrix.push_back(row);
     }
 
-    string min_canonical = get_matrix_canonical(&matrix);
-    // Single row/column components are simply just a line of 1s in every variation
-    if (matrix.size() == 1 || matrix[0].size() == 1)
-        return min_canonical;
+    vector<ii> min_canonical = get_matrix_canonical(&matrix);
 
     // To avoid complicating myself later on, building rotated after matrix has been changed
     vector<vb> rotated = flip_90(matrix);
@@ -124,19 +123,10 @@ string get_canonical(sii & component) {
     return min_canonical;
 }
 
-bool components_equal(set<string> & components_b1, set<string> & components_b2) {
-    for (string component_b1: components_b1) {
-        if (components_b2.find(component_b1) != components_b2.end()) {
-            components_b2.erase(component_b1);
-        } else return false;
-    }
-    return components_b2.empty();
-}
-
 bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
     // Intialization
     visited_b1.clear(); visited_b2.clear();
-    set<string> canonical_comps_b1, canonical_comps_b2;
+    set<vector<ii>> canonical_comps_b1, canonical_comps_b2;
     sii connected_component;
 
     for (ii b1_item: items_b1) {
@@ -181,7 +171,7 @@ int main()
             items_b2.insert(ii(x, y));
         }
 
-        if (equivalent(items_b1, items_b2, w-1, h-1)) {
+        if (equivalent(items_b1, items_b2, w, h)) {
             cout << "YES\n";
         } else cout << "NO\n";
 
