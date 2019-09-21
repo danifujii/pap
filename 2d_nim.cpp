@@ -82,19 +82,7 @@ vector<vb> flip_90(vector<vb> & mat) {
     return flipped;
 }
 
-vector<ii> get_matrix_canonical(vector<vb>* mat) {
-    vector<ii> rv;
-    for (int r = 0; r < mat->size(); r++) {
-        for (int c = 0; c < mat->at(0).size(); c++)
-            if (mat->at(r)[c]) {
-                rv.push_back(ii(r, c));
-            }
-    }
-    sort(rv.begin(), rv.end());
-    return rv;
-}
-
-vector<ii> get_canonical(sii & component) {
+vector<vb> get_component_matrix(const sii & component) {
     vector<vb> matrix;
     for (int r = left_top_corner.second; r <= right_bottom_corner.second; r++) {
         vb row;
@@ -104,29 +92,30 @@ vector<ii> get_canonical(sii & component) {
         }
         matrix.push_back(row);
     }
+    return matrix;
+}
 
-    vector<ii> min_canonical = get_matrix_canonical(&matrix);
-
+bool equal(const vector<vb> & mat1, vector<vb> & mat2) {
     // To avoid complicating myself later on, building rotated after matrix has been changed
-    vector<vb> rotated = flip_90(matrix);
+    vector<vb> rotated = flip_90(mat2);
 
-    // Keep dimensions
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&matrix)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&matrix)));  // 180 degrees
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&matrix)));  // flip horizontal of og matrix
+    flip_vertical(&mat2); if (mat1 == mat2) return true;
+    flip_horizontal(&mat2); if (mat1 == mat2) return true;  // 180 degrees
+    flip_vertical(&mat2); if (mat1 == mat2) return true;  // flip horizontal of og matrix
+    flip_horizontal(&mat2);  // return mat2 to original shape
 
     // Flip comuns size by rows size
-    min_canonical = min(min_canonical, get_matrix_canonical(&rotated));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&rotated)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_vertical(&rotated)));
-    min_canonical = min(min_canonical, get_matrix_canonical(flip_horizontal(&rotated)));  // 270 degrees
-    return min_canonical;
+    if (mat1 == rotated) return true;
+    flip_horizontal(&rotated); if (mat1 == rotated) return true;
+    flip_vertical(&rotated); if (mat1 == rotated) return true;
+    flip_horizontal(&rotated); if (mat1 == rotated) return true;  // 270 degrees
+    return false;
 }
 
 bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
     // Intialization
     visited_b1.clear(); visited_b2.clear();
-    set<vector<ii>> canonical_comps_b1, canonical_comps_b2;
+    set<vector<vb>> comps_b1, comps_b2;
     sii connected_component;
 
     for (ii b1_item: items_b1) {
@@ -134,7 +123,7 @@ bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
         reset_bounds();
         if (visited_b1.find(b1_item) != visited_b1.end()) continue;
         dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
-        canonical_comps_b1.insert(get_canonical(connected_component));
+        comps_b1.insert(get_component_matrix(connected_component));
     }
 
     for (ii b2_item: items_b2) {
@@ -142,10 +131,23 @@ bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
         reset_bounds();
         if (visited_b2.find(b2_item) != visited_b2.end()) continue;
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
-        canonical_comps_b2.insert(get_canonical(connected_component));
+        comps_b2.insert(get_component_matrix(connected_component));
     }
 
-    return canonical_comps_b1 == canonical_comps_b2;
+    if (comps_b1.size() != comps_b2.size()) return false;
+
+    for (vector<vb> component_b1: comps_b1) {
+        for (vector<vb> component_b2: comps_b2) {
+            if ((component_b1.size() == component_b2.size() && component_b1[0].size() == component_b2[0].size())
+                || (component_b1.size() == component_b2[0].size() && component_b1[0].size() == component_b2.size())) {
+                    if (equal(component_b1, component_b2)) {
+                        comps_b2.erase(component_b2);
+                    }
+                }
+        }
+    }
+
+    return comps_b2.empty();
 }
 
 int main()
