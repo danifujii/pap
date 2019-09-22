@@ -49,7 +49,7 @@ void dfs(ii root, sii* visited, sii* connected_component, int max_width, int max
 
 vector<vb>* flip_horizontal(vector<vb>* mat) {
     int row_length = mat->at(0).size();
-    int middle = row_length%2 == 0 ? row_length/2 : row_length/2+1;
+    int middle = row_length/2;
 
     for (int r = 0; r < mat->size(); r++) {
         for (int c = 0; c < middle; c++) {
@@ -62,8 +62,7 @@ vector<vb>* flip_horizontal(vector<vb>* mat) {
 }
 
 vector<vb>* flip_vertical(vector<vb>* mat) {
-    int middle = mat->size()%2 == 0 ? mat->size()/2 : mat->size()/2+1;
-
+    int middle = mat->size()/2;
     for (int r = 0; r < middle; r++)
         for (int c = 0; c < mat->at(0).size(); c++) {
             bool aux = mat->at(mat->size()-r-1)[c];
@@ -99,6 +98,7 @@ bool equal(const vector<vb> & mat1, vector<vb> & mat2) {
     // To avoid complicating myself later on, building rotated after matrix has been changed
     vector<vb> rotated = flip_90(mat2);
 
+    if (mat1 == mat2) return true;
     flip_vertical(&mat2); if (mat1 == mat2) return true;
     flip_horizontal(&mat2); if (mat1 == mat2) return true;  // 180 degrees
     flip_vertical(&mat2); if (mat1 == mat2) return true;  // flip horizontal of og matrix
@@ -115,7 +115,7 @@ bool equal(const vector<vb> & mat1, vector<vb> & mat2) {
 bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
     // Intialization
     visited_b1.clear(); visited_b2.clear();
-    set<vector<vb>> comps_b1, comps_b2;
+    vector<vector<vb>> comps_b1, comps_b2;
     sii connected_component;
 
     for (ii b1_item: items_b1) {
@@ -123,7 +123,7 @@ bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
         reset_bounds();
         if (visited_b1.find(b1_item) != visited_b1.end()) continue;
         dfs(b1_item, &visited_b1, &connected_component, max_width, max_height, items_b1);
-        comps_b1.insert(get_component_matrix(connected_component));
+        comps_b1.push_back(get_component_matrix(connected_component));
     }
 
     for (ii b2_item: items_b2) {
@@ -131,17 +131,19 @@ bool equivalent(sii & items_b1, sii & items_b2, int max_width, int max_height) {
         reset_bounds();
         if (visited_b2.find(b2_item) != visited_b2.end()) continue;
         dfs(b2_item, &visited_b2, &connected_component, max_width, max_height, items_b2);
-        comps_b2.insert(get_component_matrix(connected_component));
+        comps_b2.push_back(get_component_matrix(connected_component));
     }
 
     if (comps_b1.size() != comps_b2.size()) return false;
 
     for (vector<vb> component_b1: comps_b1) {
-        for (vector<vb> component_b2: comps_b2) {
+        for (auto it = comps_b2.begin(); it != comps_b2.end(); it++) {
+            auto component_b2 = *it;
             if ((component_b1.size() == component_b2.size() && component_b1[0].size() == component_b2[0].size())
                 || (component_b1.size() == component_b2[0].size() && component_b1[0].size() == component_b2.size())) {
                     if (equal(component_b1, component_b2)) {
-                        comps_b2.erase(component_b2);
+                        comps_b2.erase(it);
+                        break;
                     }
                 }
         }
@@ -173,7 +175,7 @@ int main()
             items_b2.insert(ii(x, y));
         }
 
-        if (equivalent(items_b1, items_b2, w, h)) {
+        if (equivalent(items_b1, items_b2, w-1, h-1)) {
             cout << "YES\n";
         } else cout << "NO\n";
 
