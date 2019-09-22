@@ -7,9 +7,10 @@ typedef vector<long> vl;
 
 long INF = 1000001;
 
-vl get_empty_adjs(int size) {
+vl get_empty_adjs(int size, int node) {
     vl adjs(size);
     for (int i = 0; i < adjs.size(); i++) adjs[i] = INF;
+    adjs[node] = 0;
     return adjs;
 }
 
@@ -36,14 +37,16 @@ void solve(const vector<vl> & graph, int box) {
 
     // Get solution: get the one with the smallest path from a neighbour i of usher to the usher
     long min_path = INF;
-    for (int i = 0; i < graph.size(); i++)
+    for (int i = 1; i < graph.size(); i++)
         if (graph[0][i] != INF) min_path = min(min_path, dist[i][0]);
-    if (min_path != INF) {
-        if (box % min_path == 0)
-            cout << (box/min_path)-1 << "\n";
-        else cout << box/min_path << "\n";
-    } else cout << "0\n";
 
+    int usher_takes = 0;
+    int sum = min_path;
+    while (sum < box) {
+        usher_takes += 1;
+        sum += min_path - 1;
+    }
+    cout << usher_takes << "\n";
 }
 
 int main()
@@ -58,18 +61,17 @@ int main()
         vector<vl> graph(pers+1);
 
         cin >> neigh_length;
-        vl usher_adj = get_empty_adjs(pers+1);
+        vl usher_adj = get_empty_adjs(pers+1, 0);
         for (int i = 0; i < neigh_length; i++) {
             cin >> neigh; usher_adj[neigh] = 0;
         }
         graph[0] = usher_adj;
 
         for (int p = 1; p <= pers; p++) {
-            vl adjs = get_empty_adjs(pers+1);
+            vl adjs = get_empty_adjs(pers+1, p);
             cin >> neigh_length;
             for (int j = 0; j < neigh_length; j++) {
                 cin >> cost >> neigh;
-                if (neigh == 0) --cost;
                 adjs[neigh] = min(adjs[neigh], cost);
             }
             graph[p] = adjs;
