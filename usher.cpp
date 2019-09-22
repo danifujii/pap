@@ -5,10 +5,39 @@ using namespace std;
 
 typedef vector<int> vi;
 
+int INF = 1000001;
+
 vi get_empty_adjs(int size) {
     vi adjs(size);
-    for (int i = 0; i < adjs.size(); i++) adjs[i] = 1000001;
+    for (int i = 0; i < adjs.size(); i++) adjs[i] = INF;
     return adjs;
+}
+
+void floyd(const vector<vi> & graph, vector<vi> & dist) {
+    for (int k = 0; k < graph.size(); k++)
+        for (int i = 0; i < graph.size(); i++)
+            for (int j = 0; j < graph.size(); j++) {
+                if (dist[i][k] + dist[k][j] < dist[i][j])
+                    dist[i][j] = dist[i][k] + dist[k][j];
+            }
+}
+
+void solve(const vector<vi> & graph, int box) {
+    // Init distances matrix for Floyd Warshall
+    vector<vi> dist(graph.size());
+    for (int i = 0; i < graph.size(); i++) {
+        vi adjs(graph.size());
+        for (int j = 0; j < graph.size(); j++)
+            adjs[j] = graph[i][j];
+    }
+
+    floyd(graph, dist); // this updates `dist`
+
+    // Get solution
+    int min_path = INF;
+    for (int i = 0; i < graph.size(); i++)
+        if (graph[0][i] != INF) min_path = min(min_path, graph[0][i]);
+    cout << box / min_path << "\n";
 }
 
 int main()
@@ -39,5 +68,6 @@ int main()
             }
             graph[p] = adjs;
         }
+        solve(graph, box);
     }
 }
