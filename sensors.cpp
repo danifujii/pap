@@ -9,6 +9,7 @@ using namespace std;
 
 typedef pair<int, int> ii;
 typedef pair<long, ii> neigh;
+typedef pair<neigh, ii> prim_node; // neigh is node with weight. ii is parent
 
 /**
  * My idea is to implement Prim to get the MST from the house node.
@@ -24,28 +25,29 @@ typedef pair<long, ii> neigh;
  * that make sense to add to the MST?
  **/
 
-long prim(ii root, map<ii, vector<neigh>> & graph) {
+long prim(ii root, map<ii, vector<neigh>> & graph, int receivers) {
     map<ii, ii> parents;
-    priority_queue<neigh, vector<neigh>, greater<neigh>> q;
-    long cost = 0;
+    priority_queue<prim_node, vector<prim_node>, greater<prim_node>> q;
+    long maximum_cost = 0; // this is the maximum cost of an edge
 
-    q.push(neigh(0, root));
+    q.push(prim_node(neigh(0, root), ii(-1, -1)));
     while (!q.empty()) {
-        neigh n = q.top(); q.pop();
+        prim_node node = q.top(); q.pop();
+        neigh n = node.first; ii parent = node.second;
 
         if (parents.find(n.second) != parents.end()) continue;
-        cost += n.first;
-        parents[n.second] = ii(0, 0);  // later see how to update this to save parents
+        maximum_cost += n.first;
+        parents[n.second] = parent;
         for (neigh ni: graph[n.second]) {
             if (parents.find(ni.second) != parents.end()) continue;
-            q.push(ni);
+            q.push(prim_node(ni, n.second));
         }
     }
-    return cost;
+    return maximum_cost;
 }
 
 long get_minimum_distance(map<ii, vector<neigh>> & graph, int receivers) {
-    cout << prim(ii(50000, 50000), graph) << endl;
+    return prim(ii(50000, 50000), graph, receivers);
 }
 
 long get_distance(ii coord1, ii coord2) {
