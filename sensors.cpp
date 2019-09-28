@@ -35,8 +35,17 @@ long prim(ii root, map<ii, vector<neigh>> & graph, int receivers) {
         prim_node node = q.top(); q.pop();
         neigh n = node.first; ii parent = node.second;
 
+        // Ignore if node already in MST
         if (parents.find(n.second) != parents.end()) continue;
-        maximum_cost += n.first;
+
+        // Check if it can have a receiver
+        if (parent == root) {
+            if (receivers > 0) {
+                receivers--;
+            } else continue;  // cannot use this edge to the house, there are no more receivers
+        } else maximum_cost = max(maximum_cost, n.first);
+        cout << n.first << endl;
+
         parents[n.second] = parent;
         for (neigh ni: graph[n.second]) {
             if (parents.find(ni.second) != parents.end()) continue;
