@@ -1,25 +1,29 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
 typedef set<int> si;
+typedef vector<int> vi;
 
 si visited;
-si component;
+vi component;
 si cycles;
 vector<int> parents;
 
 void dfs(int root, int parent, vector<vector<int>> & graph) {
     if (visited.find(root) != visited.end()) {
-        auto c = component;
-        if (component.find(root) != component.end()) // cycle
-            for (int i: component) cycles.insert(i);
+        if (find(component.begin(), component.end(), root) != component.end()) // cycle
+            for (int i = component.size() - 1; i >= 0; --i) {
+                cycles.insert(component[i]);
+                if (component[i] == root) break;
+            }
         return;
     }
     visited.insert(root);
-    component.insert(root);
+    component.push_back(root);
 
     for (int n: graph[root]) {
         if (parents[n] == -1)
@@ -31,17 +35,23 @@ void dfs(int root, int parent, vector<vector<int>> & graph) {
         }
         dfs(n, parent, graph);
     }
-    component.erase(root);
+    component.pop_back();
 }
 
-void solve(vector<vector<int>> & graph) {
+void solve(vector<vector<int>> & graph, int test) {
     visited.clear(); parents.clear(); cycles.clear();
     for (int i = 0; i < graph.size(); i++) { parents.push_back(-1); }
 
     for (int i = 0; i < graph.size(); i++) {
-        if (visited.find(i) != visited.end()) continue;
         component.clear();
+        if (visited.find(i) != visited.end()) continue;
         dfs(i, i, graph);
+    }
+
+    if (test == 137) {
+        auto p = parents;
+        auto c = cycles;
+        int i = 1;
     }
 
     long amount = 0;
@@ -58,6 +68,7 @@ int main() {
     int tests;
     cin >> tests;
 
+    int t = 1;
     while (tests > 0) {
         int dominoes, lines, domino, neigh;
         cin >> dominoes >> lines;
@@ -66,7 +77,8 @@ int main() {
             cin >> domino >> neigh;
             graph[domino-1].push_back(neigh-1);
         }
-        solve(graph);
+        solve(graph, t);
         --tests;
+        t++;
     }
 }
