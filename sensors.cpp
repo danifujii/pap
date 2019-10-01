@@ -7,60 +7,61 @@
 
 using namespace std;
 
+typedef long long ll;
 typedef pair<int, int> ii;
-typedef pair<long, ii> neigh;
-typedef pair<neigh, ii> prim_node; // neigh is node with weight. ii is parent
+typedef pair<ll, ii> neigh;
+typedef pair<neigh, ii> mst_node; // neigh is node with weight. ii is parent
 
-/**
- * My idea is to implement Prim to get the MST from the house node.
- * Then, I'd like to go from each node of the tree that goes to/from house
- * and insert a receiver there until I run out of them. The way I go should be
- * from heaviest node to the lightest.
- * WAIT: That doesn't work, because we are allowing N nodes to go to the
- * house, more than we have receivers. So, the receivers should set up a
- * upper bound of nodes that can go to the house.
- * Let's do Prim, but limit the amount of branches from house to the number of
- * receivers.
- * Q : What happens when there are more receivers than branches to the house
- * that make sense to add to the MST?
- **/
+int land_size = 100000;
+ii house = ii(land_size/2, land_size/2);
 
-long prim(ii root, map<ii, vector<neigh>> & graph, int receivers) {
-    map<ii, ii> parents;
-    priority_queue<prim_node, vector<prim_node>, greater<prim_node>> q;
-    long maximum_cost = 0; // this is the maximum cost of an edge
+ii find(map<ii, ii> & parent, ii node) {
+    if (node != parent[node])
+        parent[node] = find(parent, parent[node]);
+    return parent[node];
+}
 
-    q.push(prim_node(neigh(0, root), ii(-1, -1)));
+void merge(map<ii, ii> & parent, ii node1, ii node2) {
+    ii p1 = find(parent, node1);
+    ii p2 = find(parent, node2);
+    parent[p2] = p1;
+}
+
+ll kruskal(map<ii, vector<neigh>> & graph, int receivers) {
+    ll max_weight = 0;
+
+    // Make set
+    map<ii, ii> parent;
+    for (pair<ii, vector<neigh>> coord: graph) { parent[coord.first] = coord.first; }
+
+    // G.E ordered by weight
+    int components = graph.size();
+    priority_queue<mst_node, vector<mst_node>, greater<mst_node>> q;
+    for (pair<ii, vector<neigh>> coord: graph) for (neigh n: coord.second) q.push(mst_node(n, coord.first));
+
+    // Kruskal itself
     while (!q.empty()) {
-        prim_node node = q.top(); q.pop();
-        neigh n = node.first; ii parent = node.second;
-
-        // Ignore if node already in MST
-        if (parents.find(n.second) != parents.end()) continue;
-
-        // Check if it can have a receiver
-        if (parent == root) {
-            if (receivers > 0) {
-                receivers--;
-            } else continue;  // cannot use this edge to the house, there are no more receivers
-        } else maximum_cost = max(maximum_cost, n.first);
-        cout << n.first << endl;
-
-        parents[n.second] = parent;
-        for (neigh ni: graph[n.second]) {
-            if (parents.find(ni.second) != parents.end()) continue;
-            q.push(prim_node(ni, n.second));
+        mst_node n = q.top(); q.pop();
+        ll weight = n.first.first;
+        ii u = n.first.second; ii v = n.second;
+        if (find(parent, u) != find(parent, v)) {
+            max_weight = max(max_weight, weight);
+            merge(parent, u, v);
+            --components;
         }
+
+        if (components == receivers) break;
     }
-    return maximum_cost;
+
+    return q.top().first.first;
 }
 
-long get_minimum_distance(map<ii, vector<neigh>> & graph, int receivers) {
-    return prim(ii(50000, 50000), graph, receivers);
+ll get_minimum_distance(map<ii, vector<neigh>> & graph, int receivers) {
+    return kruskal(graph, receivers);
 }
 
-long get_distance(ii coord1, ii coord2) {
-    return ceil(sqrt(pow(coord1.first-coord2.first, 2) + pow(coord1.first-coord2.first, 2)));
+ll get_distance(ii coord1, ii coord2) {
+    return ceil(sqrt(pow(coord1.first-coord2.first, 2) + pow(coord1.second-coord2.second, 2)));
 }
 
 void add_to_graph(map<ii, vector<neigh>> & graph, ii new_coord) {
@@ -69,15 +70,19 @@ void add_to_graph(map<ii, vector<neigh>> & graph, ii new_coord) {
     // Look at the graph and calculate distances for all existing nodes
     // and add as neighbour
     for (pair<ii, vector<neigh>> coords: graph) {
-        long distance = get_distance(new_coord, coords.first);
-        coords.second.push_back(neigh(distance, new_coord));
-        new_coord_neighs.push_back(neigh(distance, coords.first));
+        ii neigh_coords = coords.first;
+        ll distance = get_distance(new_coord, neigh_coords);
+        graph[neigh_coords].push_back(neigh(distance, new_coord));
+        new_coord_neighs.push_back(neigh(distance, neigh_coords));
     }
 
     graph[new_coord] = new_coord_neighs;
 }
 
 int main() {
+    // improve perf
+    ios::sync_with_stdio(0); cin.tie(0);
+
     int tests, receivers, x, y;
     cin >> tests;
 
@@ -92,8 +97,6 @@ int main() {
 
             add_to_graph(graph, ii(x, y));
         }
-        ii house(50000, 50000);
-        add_to_graph(graph, house);
         cout << get_minimum_distance(graph, receivers) << "\n";
     }
 }
