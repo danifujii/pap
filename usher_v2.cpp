@@ -10,9 +10,9 @@ typedef pair<long, int> node;
 
 long INF = 1000001;
 
-void solve(map<int, map<int, long>> & graph, int box) {
+void solve(map<int, map<int, long>> & graph, int box, int people) {
     // Init
-    vector<long> dist(graph.size()+1);
+    vector<long> dist(people);
     priority_queue<node, vector<node>, greater<node>> q;
 
     for (int i = 0; i < dist.size(); i++) {
@@ -73,6 +73,6 @@ int main()
                 }
             }
         }
-        solve(graph, box);
+        solve(graph, box, pers+1);
     }
 }
