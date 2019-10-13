@@ -164,7 +164,7 @@ ostream& operator<<(ostream& os, dinics::flowgraph G) {
 typedef vector<int> vi;
 typedef pair<int, int> ii;
 
-int get_col_comp(vector<vector<ii>> col_comps, int row, int col) {
+int get_col_comp(const vector<vector<ii>> & col_comps, int row, int col) {
     vector<ii> comps = col_comps[col];
     for (ii dat: comps) {
         if (row <= dat.first) return dat.second;
@@ -199,7 +199,7 @@ int main() {
                     }
                 }
             }
-            row_intermediates++;
+            ++row_intermediates;
         }
 
         int col_comp = 0;
@@ -209,12 +209,12 @@ int main() {
             for (int r = 0; r < n; ++r) {
                 if (!board[r][c] && r > 0 && board[r-1][c]) {
                     col_comps[c].push_back(ii(r, col_comp));
-                    col_comp++;
+                    ++col_comp;
                 }
             }
             if (board[n-1][c]) { // close last one if there was no closing element at last row
                 col_comps[c].push_back(ii(n, col_comp));
-                col_comp++;
+                ++col_comp;
             }
         }
 
@@ -225,8 +225,7 @@ int main() {
 
         // Add all edges involving rows
         for (int r = 0; r < n; ++r) {
-            vi row_divs = rows_cap[r];
-            if (row_divs.empty()) { // no division
+            if (rows_cap[r].empty()) { // no division
                 graph.add_edge(cells-2, row_int_idx, 1);
                 for (int c = 0; c < n; ++c) {
                     if (board[r][c]) {
@@ -234,20 +233,20 @@ int main() {
                         graph.add_edge(row_int_idx, cc+row_intermediates, 1);
                     }
                 }
-                row_int_idx++;
+                ++row_int_idx;
             } else {  // there is a division, so there are multiple intermediate nodes
-                row_divs.push_back(n);
+                rows_cap[r].push_back(n);
                 int div_col = 0;
-                for (int ri = 0; ri < row_divs.size(); ++ri) {
+                for (int ri = 0; ri < rows_cap[r].size(); ++ri) {
                     graph.add_edge(cells-2, row_int_idx, 1);
-                    for (int i = div_col; i < row_divs[ri]; i++) {
+                    for (int i = div_col; i < rows_cap[r][ri]; ++i) {
                         if (board[r][i]) {
                             int cc = get_col_comp(col_comps, r, i);
                             graph.add_edge(row_int_idx, cc+row_intermediates, 1);
                         }
                     }
-                    div_col = row_divs[ri]+1;
-                    row_int_idx++;
+                    div_col = rows_cap[r][ri]+1;
+                    ++row_int_idx;
                 }
             }
         }
@@ -255,6 +254,7 @@ int main() {
         // Add edge from column intermediates to sink
         for (int c = 0; c < col_comp; ++c)
             graph.add_edge(c+row_intermediates, cells-1, 1);
-        cout << graph.maxflow(cells-2, cells-1) << "\n";
+
+        std::cout << graph.maxflow(cells-2, cells-1) << "\n";
     }
 }
