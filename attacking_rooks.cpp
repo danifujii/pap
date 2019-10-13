@@ -162,6 +162,15 @@ ostream& operator<<(ostream& os, dinics::flowgraph G) {
 }
 
 typedef vector<int> vi;
+typedef pair<int, int> ii;
+
+int get_col_comp(vector<vector<ii>> col_comps, int row, int col) {
+    vector<ii> comps = col_comps[col];
+    for (ii dat: comps) {
+        if (row <= dat.first) return dat.second;
+    }
+    return -1;
+}
 
 int main() {
     ios::sync_with_stdio(0); cin.tie(0);
@@ -170,45 +179,82 @@ int main() {
     char cell;
     while (true) {
         cin >> line;
-        if (line.empty()) break;
+        if (line.empty() || cin.eof()) break;
 
         int n = stoi(line);
 
         vector<vector<bool>> board(n, vector<bool>(n));
-        vi rows_cap(n); vi cols_cap(n);
+        vector<vi> rows_cap(n);
 
         // Build matrix
-        for (int r = 0; r < n; ++r) // per row
+        int row_intermediates = 0;
+        for (int r = 0; r < n; ++r) { // per row
             for (int c = 0; c < n; ++c) { // per col
                 cin >> cell;
                 board[r][c] = cell != 'X';
-            }
-
-        // Get info for building graph
-        bool has_space;
-        for (int r = 0; r < n; ++r)
-            for (int c = 0; c < n; ++c) {
-                has_space = board[r][c];
-                if (!has_space) {
-                    if (r > 0 && r < n-1 && board[r-1][c]) cols_cap[c]++;
-                    if (c > 0 && c < n-1 && board[r][c-1]) rows_cap[r]++;
-                } else {
-                    if (cols_cap[c] == 0) cols_cap[c]++;
-                    if (rows_cap[r] == 0) rows_cap[r]++;
+                if (!board[r][c]) {
+                    if (c > 0 && c < n-1 && board[r][c-1]) {
+                        rows_cap[r].push_back(c);
+                        row_intermediates++;
+                    }
                 }
             }
+            row_intermediates++;
+        }
 
-        // Build graph with the info
-        int cells = n*2+2; // rows, cols and source/sink
-        dinics::flowgraph graph = dinics::flowgraph(cells);
-        for (int r = 0; r < n; ++r) {
-            graph.add_edge(cells-2, r, rows_cap[r]); // add from source to row
-            for (int c = 0; c < n; ++c) { // add from row to columns
-                if (board[r][c]) graph.add_edge(r, c+n, 1);
+        int col_comp = 0;
+        vector<vector<ii>> col_comps(n);
+
+        for (int c = 0; c < n; ++c) {
+            for (int r = 0; r < n; ++r) {
+                if (!board[r][c] && r > 0 && board[r-1][c]) {
+                    col_comps[c].push_back(ii(r, col_comp));
+                    col_comp++;
+                }
+            }
+            if (board[n-1][c]) { // close last one if there was no closing element at last row
+                col_comps[c].push_back(ii(n, col_comp));
+                col_comp++;
             }
         }
-        for (int c = 0; c < n; ++c)
-            graph.add_edge(cells-1, c+n, cols_cap[c]); // add from column to sink
-        long long max_flow = graph.maxflow(cells-2, cells-1);
+
+        // Build graph with the info
+        int cells = col_comp + row_intermediates + 2; // 2 == source + sink
+        dinics::flowgraph graph = dinics::flowgraph(cells);
+        int row_int_idx = 0;
+
+        // Add all edges involving rows
+        for (int r = 0; r < n; ++r) {
+            vi row_divs = rows_cap[r];
+            if (row_divs.empty()) { // no division
+                graph.add_edge(cells-2, row_int_idx, 1);
+                for (int c = 0; c < n; ++c) {
+                    if (board[r][c]) {
+                        int cc = get_col_comp(col_comps, r, c);
+                        graph.add_edge(row_int_idx, cc+row_intermediates, 1);
+                    }
+                }
+                row_int_idx++;
+            } else {  // there is a division, so there are multiple intermediate nodes
+                row_divs.push_back(n);
+                int div_col = 0;
+                for (int ri = 0; ri < row_divs.size(); ++ri) {
+                    graph.add_edge(cells-2, row_int_idx, 1);
+                    for (int i = div_col; i < row_divs[ri]; i++) {
+                        if (board[r][i]) {
+                            int cc = get_col_comp(col_comps, r, i);
+                            graph.add_edge(row_int_idx, cc+row_intermediates, 1);
+                        }
+                    }
+                    div_col = row_divs[ri]+1;
+                    row_int_idx++;
+                }
+            }
+        }
+
+        // Add edge from column intermediates to sink
+        for (int c = 0; c < col_comp; ++c)
+            graph.add_edge(c+row_intermediates, cells-1, 1);
+        cout << graph.maxflow(cells-2, cells-1) << "\n";
     }
 }
