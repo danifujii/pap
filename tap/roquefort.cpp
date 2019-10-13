@@ -6,15 +6,25 @@
 using namespace std;
 
 typedef vector<int> vi;
-typedef vector<char> vc;
 
-map<int, vc> mem;
+map<int, string> mem;
 vi colors;
 
-vc dfs(const vector<vi> & graph, const vector<bool> & has_roq, int d, vc & so_far) {
-    if (d-1 == 0) return so_far;
-    vc best(d, '0');
+string dfs(const vector<vi> & graph, int root, const vector<bool> & has_roq, int d) {
+    if (colors[root] == 2) return mem[root];
+    if (d == 0 && colors[root] == 1) return has_roq[root] ? "1" : "0";
+    colors[root] = 1;
 
+    string best = "";
+    for (int n: graph[root]) {
+        string n_str = dfs(graph, n, has_roq, d-1);
+        mem[n] = n_str;
+        if (n_str > best) best = n_str;
+    }
+
+    colors[root] = 2;
+    best.insert(best.begin(), has_roq[root] ? '1' : '0');
+    return best;
 }
 
 void solve(const vector<vi> & graph, int d, const vector<bool> & has_roq) {
@@ -22,23 +32,29 @@ void solve(const vector<vi> & graph, int d, const vector<bool> & has_roq) {
 
     for (int g = 0; g < graph.size(); g++) {
         if (colors[g] == 0) {
-            dfs(graph, has_roq, d);
-            colors[g] = 1;
+            mem[g] = dfs(graph, g, has_roq, d-1);
+            colors[g] = 2;
         }
     }
 
     // Build solution
-    vc best(d, '0');
+    string best = "";
     for (int g = 0; g < graph.size(); g++) {
-        for (int n: graph[g]) {
-            vc n_best = mem[n];
-            if (n_best.size() == d-1) {
-                vc new_nbest = vc(n_best.begin(), n_best.end()-1);
-                new_nbest.insert(n_best.begin(), has_roq[g] ? '1' : '0');
-                if (best < new_nbest) best = new_nbest;
-            }
+        string mem_g = mem[g].substr(0, d);
+        if (mem[g].size() >= d) { best = max(best, mem[g].substr(0, d)); continue; }
+
+        string n_best = "";
+        for (int n: graph[g])
+            if (mem[n].size() >= d-1) n_best = max(n_best, mem[n].substr(0, d-1));
+        if (n_best.size() == d-1) {
+            n_best.insert(n_best.begin(), has_roq[g] ? '1' : '0');
+            best = max(best, n_best);
         }
     }
+    for (char c: best) {
+        cout << c << " ";
+    }
+    cout << "\n";
 }
 
 int main()
@@ -58,7 +74,7 @@ int main()
     vector<vi> graph(n);
     for (int i = 0; i < n; i++) {
         cin >> e;
-        if (e != -1) graph[e].push_back(i);
+        if (e != -1) graph[e-1].push_back(i);
     }
     solve(graph, d, has_roq);
 }
