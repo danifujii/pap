@@ -14,10 +14,11 @@ int elem_at_idx(int st, int idx) {
 
 int insert_elem(int st, int elem) {
     st = st << 2;
+    st = st & ((1 << (n+1)*2) - 1);
     return st | elem;
 }
 
-bool valid(int k, int r, int c, int st, int n) {
+bool valid(int k, int r, int c, int st) {
     if (r > 0) {
         int upward_elem = elem_at_idx(st, 0);
         if (k == upward_elem) return false;
@@ -30,22 +31,22 @@ bool valid(int k, int r, int c, int st, int n) {
 }
 
 ull amounts(const vector<vs> & mat, int r, int c, int st) {
-    if (r == 0 && c == m) {
-        return 1;
-    }
+    if (r == 0 && c == m) return 1;
 
     short cell = mat[r][c];
     if (cell == -1) {
+        bool last_elem = r == n-1;
         ull sum = 0;
         for (int ki = 0; ki < k; ++ki) {
-            int new_st = insert_elem(st, ki);
-            if (valid(ki, r, c, new_st, n)) {
-                sum += amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, new_st);
+            if (valid(ki, r, c, st)) {
+                int new_st = insert_elem(st, ki);
+                sum += amounts(mat, last_elem?0:r+1, last_elem?c+1:c, new_st);
             }
         }
         return sum;
     } else {  // Set value
-        if (valid(cell, r, c, st, n)) {
+        if (valid(cell, r, c, st)) {
+            st = insert_elem(st, cell);
             return amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, st);
         } else return 0;
     }
@@ -64,7 +65,7 @@ int main() {
             cin >> cell;
             if (cell == '-')
                 row[c] = -1;
-            else row[c] = cell - '0';
+            else row[c] = (cell - '0')-1;
         }
         mat[r] = row;
     }
