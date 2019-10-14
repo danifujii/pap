@@ -1,10 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <math.h>
 using namespace std;
 
 typedef vector<short> vs;
 typedef unsigned long long ull;
+
+ull modulo = pow(10, 9) + 7;
 
 int n, m, k;
 
@@ -44,7 +47,7 @@ ull amounts(const vector<vs> & mat, int r, int c, int st) {
             if (valid(ki, r, c, st)) {
                 int new_st = insert_elem(st, ki);
                 if (mem[r][c].find(new_st) == mem[r][c].end())
-                    mem[r][c][new_st] = amounts(mat, last_elem?0:r+1, last_elem?c+1:c, new_st);
+                    mem[r][c][new_st] = amounts(mat, last_elem?0:r+1, last_elem?c+1:c, new_st) % modulo;
                 sum += mem[r][c][new_st];
             }
         }
@@ -53,7 +56,7 @@ ull amounts(const vector<vs> & mat, int r, int c, int st) {
         if (valid(cell, r, c, st)) {
             st = insert_elem(st, cell);
             if (mem[r][c].find(st) == mem[r][c].end())
-                mem[r][c][st] = amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, st);
+                mem[r][c][st] = amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, st) % modulo;
             return mem[r][c][st];
         } else return 0;
     }
