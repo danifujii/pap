@@ -1,11 +1,14 @@
 #include <iostream>
 #include <vector>
+#include <map>
 using namespace std;
 
 typedef vector<short> vs;
 typedef unsigned long long ull;
 
 int n, m, k;
+
+vector<vector<map<int, int>>> mem;
 
 int elem_at_idx(int st, int idx) {
     int m = 3 << (idx*2);
@@ -40,14 +43,18 @@ ull amounts(const vector<vs> & mat, int r, int c, int st) {
         for (int ki = 0; ki < k; ++ki) {
             if (valid(ki, r, c, st)) {
                 int new_st = insert_elem(st, ki);
-                sum += amounts(mat, last_elem?0:r+1, last_elem?c+1:c, new_st);
+                if (mem[r][c].find(new_st) == mem[r][c].end())
+                    mem[r][c][new_st] = amounts(mat, last_elem?0:r+1, last_elem?c+1:c, new_st);
+                sum += mem[r][c][new_st];
             }
         }
         return sum;
     } else {  // Set value
         if (valid(cell, r, c, st)) {
             st = insert_elem(st, cell);
-            return amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, st);
+            if (mem[r][c].find(st) == mem[r][c].end())
+                mem[r][c][st] = amounts(mat, r < n-1 ? r+1 : 0, r < n-1 ? c : c+1, st);
+            return mem[r][c][st];
         } else return 0;
     }
 }
@@ -69,5 +76,7 @@ int main() {
         }
         mat[r] = row;
     }
+
+    mem.resize(n, vector<map<int, int>>(m));
     cout << amounts(mat, 0, 0, 0);
 }
