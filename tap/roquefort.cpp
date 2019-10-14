@@ -37,6 +37,7 @@ void solve(const vector<vi> & graph, int d, const vector<bool> & has_roq) {
         }
     }
 
+    // TODO probably best to build all possible of len D, write in mem and then try to do this
     // Build solution
     string best = "";
     for (int g = 0; g < graph.size(); g++) {
