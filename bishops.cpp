@@ -49,8 +49,8 @@ ull bishops(int col, int k, int n, int av_rows, map<int, ull> mem[][1000]) {
         av_rows = remove_item(av_rows, r);
         auto one_val = get_bishops_mem(col, k - 1, av_rows, mem);
         if (one_val == UNDEF)
-            mem[col][k-1][av_rows] = bishops(col + 2, k - 1, n, av_rows, mem) * (col < n ? 2 : 1);  // just one item in this column. Multiplied by 2 because you have to count for the symmetric case
-        res += mem[col][k-1][av_rows];
+            mem[col][k-1][av_rows] = bishops(col + 2, k - 1, n, av_rows, mem);
+        res += mem[col][k-1][av_rows] * (col < n ? 2 : 1);  // just one item in this column. Multiplied by 2 because you have to count for the symmetric case;
 
         if (col < n) {  // diagonal can't allow two
             for (int r2 = 0; r2 <= col; r2++) {  // add bishop in the other half of the board
@@ -70,14 +70,13 @@ ull bishops(int col, int k, int n, int av_rows, map<int, ull> mem[][1000]) {
 }
 
 ull bishops(int k, int n) {
-    if (k == 0 || n < k) return 0;
+    if (k == 0) return 1;
 
     map<int, ull> mem[n + 2][1000];  // current col, available bishops, available rows -> amount of combinations
     auto res = 0;
     for (int i = 0; i <= k; i++) {
         auto even = bishops(0, k - i, n - 1, numeric_limits<int>::max(), mem);
         auto uneven = bishops(1, i, n - 1, numeric_limits<int>::max(), mem);
-        // cout << even << "*" << uneven << "-" << k - i << "-" << i << endl;
         res += even * uneven;
     }
     return res;
