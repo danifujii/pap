@@ -20,12 +20,12 @@ bool is_available(int items, int i) {
     return (items & (1 << i)) > 0;
 }
 
-inline ull get_bishops_mem(int col, int k, int av_rows, map<int, ull> mem[][1000]) {
+inline ull get_bishops_mem(int col, int k, int av_rows, map<int, ull> mem[][65]) {
     auto m = mem[col][k];
     return m.find(av_rows) == m.end() ? UNDEF : m[av_rows];
 }
 
-ull bishops(int col, int k, int n, int av_rows, map<int, ull> mem[][1000]) {
+ull bishops(int col, int k, int n, int av_rows, map<int, ull> mem[][65]) {
     /*
      * In a single column, I should try inserting no element, one element and continue on with that
      * and then try with two (this can be continued with the "for available rows" of the first element).
@@ -72,7 +72,7 @@ ull bishops(int col, int k, int n, int av_rows, map<int, ull> mem[][1000]) {
 ull bishops(int k, int n) {
     if (k == 0) return 1;
 
-    map<int, ull> mem[n + 2][1000];  // current col, available bishops, available rows -> amount of combinations
+    map<int, ull> mem[n + 2][65];  // current col, available bishops, available rows -> amount of combinations
     auto res = 0;
     for (int i = 0; i <= k; i++) {
         auto even = bishops(0, k - i, n - 1, numeric_limits<int>::max(), mem);
