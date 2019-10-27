@@ -20,9 +20,9 @@ const auto op = [](const data& a, const data& b) -> data {
 
 // SEGMENT TREE - HELPER FUNCTIONS
 int nextPow2(int n) {
-  int r = 1;
-  while(r < n) r = r << 1;
-  return r;
+    int r = 1;
+    while(r < n) r = r << 1;
+    return r;
 }
 
 inline int leaf_offset(const std::vector<data> & st) {
@@ -30,15 +30,15 @@ inline int leaf_offset(const std::vector<data> & st) {
 }
 
 inline int lchild(int i) {
-  return i << 1;
+    return i << 1;
 }
 
 inline int rchild(int i) {
-  return lchild(i) + 1;
+    return lchild(i) + 1;
 }
 
 inline int parent(int i) {
-  return i >> 1;
+    return i >> 1;
 }
 
 inline void update(int i) {
@@ -50,48 +50,46 @@ inline void update(int i) {
 
 // SEGMENT TREE - QUERY
 data query(int l, int r, int idx, int i, int j) {
-  // return node if fully contained in range
-  if (l <= i && j <= r) return st[idx];
-  // return neutral value if disjoint
-  if (r <= i || l >= j) return neut;
-  // combine children if partially contained
-  int m = (i + j) / 2;
+    // return node if fully contained in range
+    if (l <= i && j <= r) return st[idx];
+    // return neutral value if disjoint
+    if (r <= i || l >= j) return neut;
+    // combine children if partially contained
+    int m = (i + j) / 2;
 
-  data left_data = query(l, r, lchild(idx), i, m);
-  data right_data = query(l, r, rchild(idx), m, j);
-  return op(left_data, right_data);
+    data left_data = query(l, r, lchild(idx), i, m);
+    data right_data = query(l, r, rchild(idx), m, j);
+    return op(left_data, right_data);
 }
 
 data query(int l, int r) {
-  return query(l, r, 1, 0, leaf_offset(st));
+    return query(l, r, 1, 0, leaf_offset(st));
 }
 
 // SEGMENT TREE - SET
 void set_leaf(int i, const data& v) {
-  // set on leaf node
-  data current_leaf = st[i += leaf_offset(st)];
-  if (v == -1)
-    st[i += leaf_offset(st)] = (current_leaf == 1 ? 0 : 1);
-  else st[i += leaf_offset(st)] = v;
-}
-
-void set(int i, const data& v) {
-  set_leaf(i, v);
-  // propagate upwards
-  while (i = parent(i)) update(i);
+    // set on leaf node
+    data current_leaf = st[i];  // i is already correct leaf index
+    if (v == -1)
+        st[i] = (current_leaf == 1 ? 0 : 1);
+    else st[i] = v;
 }
 
 void set_range(int n, int nl, int nr, int l, int r, const data & v) {
-  if (n >= leaf_offset(st)) {
-    set_leaf(n, v);
-    return;
-  }
-  int m = (l + r) / 2;
+    if (r <= nl || l >= nr) return;  // out of range
 
+    if (n >= leaf_offset(st)) {
+        set_leaf(n, v);
+        return;
+    }
+    int m = (nl + nr) / 2;
+    set_range(lchild(n), nl, m, l, r, v);
+    set_range(rchild(n), m, nr, l, r, v);
+    update(n);
 }
 
 void set_range(int l, int r, const data & v) {
-  set_range(1, 0, leaf_offset(st), l, r, v);
+    set_range(1, 0, leaf_offset(st), l, r, v);
 }
 
 // SEGMENT TREE - INITIALIZATION
@@ -134,13 +132,10 @@ int main() {
             if (s == "S") {
                 qn++;
                 cout << "Q" << qn << ": " << query(l, r+1) << "\n";
-            } else if (s == "F") { // set to Bucaneer (1)
-
-            } else if (s == "") { // set to Barbary (0)
-
-            } else if (s == "I") { // invert in range
-
             }
+            else if (s == "F") set_range(l, r+1, 1); // set to Bucaneer (1)
+            else if (s == "E") set_range(l, r+1, 0);  // set to Barbary (0)
+            else if (s == "I") set_range(l, r+1, -1);  // invert in range
         }
     }
 }
