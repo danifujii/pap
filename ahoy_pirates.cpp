@@ -67,11 +67,31 @@ data query(int l, int r) {
 }
 
 // SEGMENT TREE - SET
-void set(int i, const data& v) {
+void set_leaf(int i, const data& v) {
   // set on leaf node
-  st[i += leaf_offset(st)] = v;
+  data current_leaf = st[i += leaf_offset(st)];
+  if (v == -1)
+    st[i += leaf_offset(st)] = (current_leaf == 1 ? 0 : 1);
+  else st[i += leaf_offset(st)] = v;
+}
+
+void set(int i, const data& v) {
+  set_leaf(i, v);
   // propagate upwards
   while (i = parent(i)) update(i);
+}
+
+void set_range(int n, int nl, int nr, int l, int r, const data & v) {
+  if (n >= leaf_offset(st)) {
+    set_leaf(n, v);
+    return;
+  }
+  int m = (l + r) / 2;
+
+}
+
+void set_range(int l, int r, const data & v) {
+  set_range(1, 0, leaf_offset(st), l, r, v);
 }
 
 // SEGMENT TREE - INITIALIZATION
