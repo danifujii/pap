@@ -10,8 +10,10 @@ using std::end;
 using data = int;
 // neutral value, i.e. op(a, neut) = op(neut, a) = a
 const data neut = 0;
+const data lazy_neut = -2;
 
 std::vector<data> st;
+std::vector<data> lazy;
 
 // tree binary operation
 const auto op = [](const data& a, const data& b) -> data {
@@ -48,14 +50,42 @@ inline void update(int i) {
     st[i] = val;
 }
 
+int combine_lazy(int new_lazy_op, int n) {
+    if (lazy[n] == lazy_neut) return new_lazy_op;  // nothing to combine
+    if (new_lazy_op == -1) {  // flip, then depends on what was there
+        if (lazy[n] == -1) return lazy_neut;  // other flip, then nothing
+        else return (lazy[n] == 1) ? 0 : 1;  // flip existing value
+    }
+    else return new_lazy_op;  // new op wins against old set one
+}
+
+void apply_lazy(int n, int nl, int nr, int lazy_op) {
+    if (lazy_op == -1) {
+        if (n < leaf_offset(st))
+            st[n] = (nr-nl)-st[n];  // flip the amount we currently have
+        else st[n] = (st[n] == 1 ? 0 : 1); // its a leaf, just invert
+    } else st[n] = (nr-nl)*lazy_op;
+
+    if (n < leaf_offset(st)) {
+        lazy[lchild(n)] = combine_lazy(lazy_op, lchild(n));
+        lazy[rchild(n)] = combine_lazy(lazy_op, rchild(n));
+    }
+    auto ll = lazy;
+    cout << "";
+}
+
 // SEGMENT TREE - QUERY
 data query(int l, int r, int idx, int i, int j) {
-    // return node if fully contained in range
-    if (l <= i && j <= r) return st[idx];
-    // return neutral value if disjoint
-    if (r <= i || l >= j) return neut;
-    // combine children if partially contained
-    int m = (i + j) / 2;
+    if (r <= i || l >= j) return neut;  // return neutral value if disjoint
+
+    // apply lazy updates if necessary
+    if (lazy[idx] != lazy_neut) {
+        apply_lazy(idx, i, j, lazy[idx]);
+        lazy[idx] = lazy_neut;
+    }
+
+    if (l <= i && j <= r) return st[idx];  // return node if fully contained in range
+    int m = (i + j) / 2; // combine children if partially contained
 
     data left_data = query(l, r, lchild(idx), i, m);
     data right_data = query(l, r, rchild(idx), m, j);
@@ -67,7 +97,7 @@ data query(int l, int r) {
 }
 
 // SEGMENT TREE - SET
-void set_leaf(int i, const data& v) {
+void set_node(int i, const data& v) {
     // set on leaf node
     data current_leaf = st[i];  // i is already correct leaf index
     if (v == -1)
@@ -78,10 +108,17 @@ void set_leaf(int i, const data& v) {
 void set_range(int n, int nl, int nr, int l, int r, const data & v) {
     if (r <= nl || l >= nr) return;  // out of range
 
-    if (n >= leaf_offset(st)) {
-        set_leaf(n, v);
+    // apply lazy updates if necessary
+    if (lazy[n] != lazy_neut) {
+        apply_lazy(n, nl, nr, lazy[n]);
+        lazy[n] = lazy_neut;
+    }
+
+    if (l <= nl && nr <= r) { // completely in range
+        apply_lazy(n, nl, nr, v);
         return;
     }
+
     int m = (nl + nr) / 2;
     set_range(lchild(n), nl, m, l, r, v);
     set_range(rchild(n), m, nr, l, r, v);
@@ -98,6 +135,8 @@ void init_segtree(Iter begin, Iter end) {
     size_t size = nextPow2(std::distance(begin, end));
     // allocate space for tree
     st.clear(); st.resize(size << 1, neut);
+    lazy.clear(); lazy.resize(size << 1, lazy_neut);
+
     // load values into tree
     std::copy(begin, end, st.begin() + size);
     // compute upper levels
