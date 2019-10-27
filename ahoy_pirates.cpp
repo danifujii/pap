@@ -105,7 +105,7 @@ void set_node(int i, const data& v) {
 }
 
 void set_range(int n, int nl, int nr, int l, int r, const data & v) {
-    // apply lazy updates if necessary
+    // apply lazy updates if necessary. Important to apply even if outside range of update
     if (lazy[n] != lazy_neut) {
         apply_lazy(n, nl, nr, lazy[n]);
         lazy[n] = lazy_neut;
