@@ -70,21 +70,20 @@ void apply_lazy(int n, int nl, int nr, int lazy_op) {
         lazy[lchild(n)] = combine_lazy(lazy_op, lchild(n));
         lazy[rchild(n)] = combine_lazy(lazy_op, rchild(n));
     }
-    auto ll = lazy;
-    cout << "";
 }
 
 // SEGMENT TREE - QUERY
 data query(int l, int r, int idx, int i, int j) {
-    if (r <= i || l >= j) return neut;  // return neutral value if disjoint
-
     // apply lazy updates if necessary
     if (lazy[idx] != lazy_neut) {
         apply_lazy(idx, i, j, lazy[idx]);
         lazy[idx] = lazy_neut;
     }
 
-    if (l <= i && j <= r) return st[idx];  // return node if fully contained in range
+    if (r <= i || l >= j) return neut;  // return neutral value if disjoint
+
+    int val = st[idx];
+    if (l <= i && j <= r) return val;  // return node if fully contained in range
     int m = (i + j) / 2; // combine children if partially contained
 
     data left_data = query(l, r, lchild(idx), i, m);
@@ -106,13 +105,13 @@ void set_node(int i, const data& v) {
 }
 
 void set_range(int n, int nl, int nr, int l, int r, const data & v) {
-    if (r <= nl || l >= nr) return;  // out of range
-
     // apply lazy updates if necessary
     if (lazy[n] != lazy_neut) {
         apply_lazy(n, nl, nr, lazy[n]);
         lazy[n] = lazy_neut;
     }
+
+    if (r <= nl || l >= nr) return;  // out of range
 
     if (l <= nl && nr <= r) { // completely in range
         apply_lazy(n, nl, nr, v);
