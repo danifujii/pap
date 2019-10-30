@@ -12,7 +12,7 @@ vi compute_pi(const string & w) {
     vi pi(w.size()+1, 0);
     int len;
     for (int i = 1; i < w.size(); ++i) {
-        len = pi[len-1];
+        len = pi[i-1];
         while (len > 0 && w[len] != w[i])
             len = pi[len - 1];
         if (w[i] == w[len]) len++;
