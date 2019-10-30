@@ -58,7 +58,6 @@ vb kmp_search(const string &text, const vector<string> &patterns) {
 
 vector<string> compute_shifts(const string & w, const string & alph) {
     vector<string> res(alph.size());
-    map<char, int> char_idx;
     for (int shift = 0; shift < alph.size(); ++shift) {
         string s;
         for (char c: w) {
