@@ -94,7 +94,14 @@ int ahoCorasick::find_keywords(const string& x) {
 }
 
 string shift(string & s, int shifts) {
-    return s.substr(shifts, s.size()-shifts) + s.substr(0, shifts);
+    if (s.size() > shifts)
+        return s.substr(shifts, s.size()-shifts) + s.substr(0, shifts);
+    else {
+        // simulate, unfortunately
+        for (int i = 0; i < shifts; ++i)
+            s = s.substr(1, s.size()-1) + s.substr(0, 1);
+        return s;
+    }
 }
 
 int main() {
