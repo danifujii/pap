@@ -104,6 +104,8 @@ string shift(string & s, int shifts) {
     }
 }
 
+int nodes_limit = 500;
+
 int main() {
     ios::sync_with_stdio(0); cin.tie(0);
 
@@ -112,18 +114,30 @@ int main() {
     for (int i = 1; i <= t; ++i) {
         cout << "Case #" << i << ":\n";
         cin >> l;
-        int shifts = 0;
-        set<string> words;
+        int shifts = 0, nodes = 0;
+        set<string> all_words; set<string> latest_words;
+        ahoCorasick pri = ahoCorasick(all_words); ahoCorasick sec = ahoCorasick(latest_words);
+        bool rebuild_pri = false, rebuild_sec = false;
 
         while (l--) {
             cin >> s;
             char op = s[0]; s = s.substr(1, s.size()-1); s = shift(s, shifts); // string cleanup
             if (op == '+') {  // add pattern
-                words.insert(s);
+                latest_words.insert(s); all_words.insert(s);
+                rebuild_sec = true;
+                nodes += s.size();
+                if (nodes > nodes_limit) rebuild_pri = true;
             } else {  // query time
-                ahoCorasick aho = ahoCorasick(words);
-                int res = aho.find_keywords(s);
-                cout << res << "\n";
+                if (rebuild_pri) {
+                    pri = ahoCorasick(all_words);
+                    latest_words.clear();
+                    sec = ahoCorasick(latest_words);
+                    nodes = 0; rebuild_pri = false; rebuild_sec = false;
+                } else if (rebuild_sec) {
+                    sec = ahoCorasick(latest_words); rebuild_sec = false;
+                }
+
+                cout << pri.find_keywords(s) + sec.find_keywords(s) << "\n";
                 shifts++;
             }
         }
