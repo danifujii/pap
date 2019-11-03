@@ -16,7 +16,7 @@ struct ahoState {
   bool leaf;
   int parent;
   int fail;
-  vector<int> words;  // Si bien usamos aristas de output, es necesario tener un vector ya que podría haber patrones repetidos.
+  set<string> words;
   int output;
 
   ahoState(int parent= INT_INF)
@@ -25,16 +25,16 @@ struct ahoState {
 
 struct ahoCorasick {
   vector<ahoState> state_machine;
-  ahoCorasick(const vector<string>&);
+  ahoCorasick(const set<string>&);
   int find_keywords(const string&);
 };
 
-ahoCorasick::ahoCorasick(const vector<string>& keywords) {
+ahoCorasick::ahoCorasick(const set<string>& keywords) {
   state_machine.emplace_back();
 
-  for (int i = 0; i < keywords.size(); ++i) {
+  for (const string & w: keywords) {
     int state_index = root_state;
-    for (char c : keywords[i]) {
+    for (char c : w) {
       if (state_machine[state_index].go_to.count(c) == 0) {
         state_machine[state_index].go_to[c] = state_machine.size();
         state_machine.emplace_back(state_index);
@@ -42,7 +42,7 @@ ahoCorasick::ahoCorasick(const vector<string>& keywords) {
       state_index = state_machine[state_index].go_to[c];
     }
     state_machine[state_index].leaf = true;
-    state_machine[state_index].words.push_back(i);
+    state_machine[state_index].words.insert(w);
   }
 
   for (char c = min_alphabet; c <= max_alphabet; ++c)
@@ -82,12 +82,12 @@ int ahoCorasick::find_keywords(const string& x) {
     while (state_machine[current_state].go_to.count(c) == 0) current_state = state_machine[current_state].fail;
     current_state = state_machine[current_state].go_to[c];
 
-    if (state_machine[current_state].leaf) for (auto word_id : state_machine[current_state].words) matches++;
+    if (state_machine[current_state].leaf) matches += state_machine[current_state].words.size();
 
     int output_index = current_state;
     while (state_machine[output_index].output != INT_INF){
       output_index = state_machine[output_index].output;
-      for (auto word_id : state_machine[output_index].words) matches++;
+      matches += state_machine[output_index].words.size();
     }
   }
   return matches;
@@ -114,13 +114,14 @@ int main() {
         cin >> l;
         int shifts = 0;
         set<string> words;
+
         while (l--) {
             cin >> s;
             char op = s[0]; s = s.substr(1, s.size()-1); s = shift(s, shifts); // string cleanup
             if (op == '+') {  // add pattern
                 words.insert(s);
             } else {  // query time
-                ahoCorasick aho = ahoCorasick(vector<string>(words.begin(), words.end()));
+                ahoCorasick aho = ahoCorasick(words);
                 int res = aho.find_keywords(s);
                 cout << res << "\n";
                 shifts++;
