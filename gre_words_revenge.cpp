@@ -137,8 +137,11 @@ int main() {
                     sec = ahoCorasick(latest_words); rebuild_sec = false;
                 }
 
-                cout << pri.find_keywords(s) + sec.find_keywords(s) << "\n";
-                shifts++;
+                int pri_matches = pri.find_keywords(s);
+                int sec_matches = sec.find_keywords(s);
+                int res = pri_matches + sec_matches;
+                cout << res << "\n";
+                shifts = res;
             }
         }
     }
