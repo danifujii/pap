@@ -123,10 +123,13 @@ int main() {
             cin >> s;
             char op = s[0]; s = s.substr(1, s.size()-1); s = shift(s, shifts); // string cleanup
             if (op == '+') {  // add pattern
-                latest_words.insert(s); all_words.insert(s);
-                rebuild_sec = true;
-                nodes += s.size();
-                if (nodes > nodes_limit) rebuild_pri = true;
+                if (all_words.find(s) == all_words.end()) {
+                    all_words.insert(s);
+                    latest_words.insert(s);
+                    rebuild_sec = true;
+                    nodes += s.size();
+                    if (nodes > nodes_limit) rebuild_pri = true;
+                }
             } else {  // query time
                 if (rebuild_pri) {
                     pri = ahoCorasick(all_words);
