@@ -1,97 +1,76 @@
 #include <iostream>
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <unordered_map>
 #include <queue>
+#include <string.h>
+#include <assert.h>
+#include <algorithm>
 
 using namespace std;
 
-const int INT_INF = -1;
-constexpr char min_alphabet = '0';
-constexpr char max_alphabet = '1';
-const int root_state = 0;
+#define rep(i, a, b) for(int i = a; i < (b); ++i)
+#define trav(a, x) for(auto& a : x)
+#define all(x) begin(x), end(x)
+#define sz(x) (int)(x).size()
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef vector<int> vi;
 
-struct ahoState {
-  unordered_map<char, int> go_to;
-  bool leaf;
-  int parent;
-  int fail;
-  set<string> words;
-  int output;
+struct AhoCorasick {
+	enum {alpha = 26, first = '0'};
+	struct Node {
+		// (nmatches is optional)
+		int back, next[alpha], start = -1, end = -1, nmatches = 0;
+		Node(int v) { memset(next, v, sizeof(next)); }
+	};
+	vector<Node> N;
+	vector<int> backp;
+	void insert(string& s, int j) {
+		assert(!s.empty());
+		int n = 0;
+		trav(c, s) {
+			int& m = N[n].next[c - first];
+			if (m == -1) { n = m = sz(N); N.emplace_back(-1); }
+			else n = m;
+		}
+		if (N[n].end == -1) N[n].start = j;
+		backp.push_back(N[n].end);
+		N[n].end = j;
+		N[n].nmatches++;
+	}
+	AhoCorasick(vector<string>& pat) {
+		N.emplace_back(-1);
+		rep(i,0,sz(pat)) insert(pat[i], i);
+		N[0].back = sz(N);
+		N.emplace_back(0);
 
-  ahoState(int parent= INT_INF)
-  : parent(parent), fail(0), output(INT_INF), leaf(false) {}
+		queue<int> q;
+		for (q.push(0); !q.empty(); q.pop()) {
+			int n = q.front(), prev = N[n].back;
+			rep(i,0,alpha) {
+				int &ed = N[n].next[i], y = N[prev].next[i];
+				if (ed == -1) ed = y;
+				else {
+					N[ed].back = y;
+					(N[ed].end == -1 ? N[ed].end : backp[N[ed].start])
+						= N[y].end;
+					N[ed].nmatches += N[y].nmatches;
+					q.push(ed);
+				}
+			}
+		}
+	}
+	int find(string word) {
+		int n = 0;
+		int count = 0;
+		trav(c, word) {
+			n = N[n].next[c - first];
+			count += N[n].nmatches;
+		}
+		return count;
+	}
 };
-
-struct ahoCorasick {
-  vector<ahoState> state_machine;
-  ahoCorasick(const set<string>&);
-  int find_keywords(const string&);
-};
-
-ahoCorasick::ahoCorasick(const set<string>& keywords) {
-  state_machine.emplace_back();
-
-  for (const string & w: keywords) {
-    int state_index = root_state;
-    for (char c : w) {
-      if (state_machine[state_index].go_to.count(c) == 0) {
-        state_machine[state_index].go_to[c] = state_machine.size();
-        state_machine.emplace_back(state_index);
-      }
-      state_index = state_machine[state_index].go_to[c];
-    }
-    state_machine[state_index].leaf = true;
-    state_machine[state_index].words.insert(w);
-  }
-
-  for (char c = min_alphabet; c <= max_alphabet; ++c)
-    if (state_machine[root_state].go_to.count(c) == 0)
-      state_machine[root_state].go_to[c] = root_state;
-
-  auto states = queue<int>();
-
-  for (auto it = state_machine[root_state].go_to.begin(); it != state_machine[root_state].go_to.end(); ++it)
-    if (it->second != root_state) states.push(it->second);
-
-  while (states.size() != 0) {
-    int state_index = states.front();
-    states.pop();
-
-    for (auto it = state_machine[state_index].go_to.begin(); it != state_machine[state_index].go_to.end(); ++it) {
-      int fail_index = state_machine[state_index].fail;
-
-      //Falla hasta encontrar un camino por c
-      while(state_machine[fail_index].go_to.count(it->first) == 0) fail_index = state_machine[fail_index].fail;
-      fail_index = state_machine[fail_index].go_to[it->first];
-      state_machine[it->second].fail = fail_index;
-
-      if (state_machine[fail_index].leaf) state_machine[it->second].output = fail_index;
-      else state_machine[it->second].output = state_machine[fail_index].output;
-
-      states.push(it->second);
-    }
-  }
-}
-
-int ahoCorasick::find_keywords(const string& x) {
-  int matches = 0;
-
-  int current_state = root_state;
-  for (char c : x) {
-    while (state_machine[current_state].go_to.count(c) == 0) current_state = state_machine[current_state].fail;
-    current_state = state_machine[current_state].go_to[c];
-
-    if (state_machine[current_state].leaf) matches += state_machine[current_state].words.size();
-
-    int output_index = current_state;
-    while (state_machine[output_index].output != INT_INF){
-      output_index = state_machine[output_index].output;
-      matches += state_machine[output_index].words.size();
-    }
-  }
-  return matches;
-}
 
 string shift(string & s, int shifts) {
     if (s.size() > shifts)
@@ -104,7 +83,7 @@ string shift(string & s, int shifts) {
     }
 }
 
-int nodes_limit = 500;
+int nodes_limit = 1500;
 
 int main() {
     ios::sync_with_stdio(0); cin.tie(0);
@@ -115,33 +94,37 @@ int main() {
         cout << "Case #" << i << ":\n";
         cin >> l;
         int shifts = 0, nodes = 0;
-        set<string> all_words; set<string> latest_words;
-        ahoCorasick pri = ahoCorasick(all_words); ahoCorasick sec = ahoCorasick(latest_words);
+        unordered_set<string> all_words;
+        vector<string> complete_words; vector<string> latest_words;
+        AhoCorasick pri = AhoCorasick(complete_words); AhoCorasick sec = AhoCorasick(latest_words);
         bool rebuild_pri = false, rebuild_sec = false;
 
         while (l--) {
             cin >> s;
             char op = s[0]; s = s.substr(1, s.size()-1); s = shift(s, shifts); // string cleanup
             if (op == '+') {  // add pattern
-                if (all_words.find(s) == all_words.end()) {
+                if (all_words.find(s) != all_words.end()) continue; // pattern already found
+                auto it = find(complete_words.begin(), complete_words.end(), s);
+                if (it == complete_words.end()) {
                     all_words.insert(s);
-                    latest_words.insert(s);
+                    complete_words.push_back(s);
+                    latest_words.push_back(s);
                     rebuild_sec = true;
                     nodes += s.size();
                     if (nodes > nodes_limit) rebuild_pri = true;
                 }
             } else {  // query time
                 if (rebuild_pri) {
-                    pri = ahoCorasick(all_words);
+                    pri = AhoCorasick(complete_words);
                     latest_words.clear();
-                    sec = ahoCorasick(latest_words);
+                    sec = AhoCorasick(latest_words);
                     nodes = 0; rebuild_pri = false; rebuild_sec = false;
                 } else if (rebuild_sec) {
-                    sec = ahoCorasick(latest_words); rebuild_sec = false;
+                    sec = AhoCorasick(latest_words); rebuild_sec = false;
                 }
 
-                int pri_matches = pri.find_keywords(s);
-                int sec_matches = sec.find_keywords(s);
+                int pri_matches = pri.find(s);
+                int sec_matches = sec.find(s);
                 int res = pri_matches + sec_matches;
                 cout << res << "\n";
                 shifts = res;
