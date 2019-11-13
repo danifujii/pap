@@ -1,9 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <set>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
+#include <deque>
 
 using namespace std;
+
+typedef pair<int, int> ii;
 
 // Suffix Array O(nlogn)
 // s.push('$');
@@ -82,11 +86,8 @@ int string_belonging(vector<int> & begins, int index) {
     }
 }
 
-void solve(vector<string> & ss) {
-    if (ss.size() == 1) {
-        cout << ss[0] << "\n";
-        return;
-    }
+void solve2(const vector<string> & ss) {
+    if (ss.size() == 1) { cout << ss[0] << "\n"; return; }
 
     string complete;
     vector<int> begins(ss.size());
@@ -96,39 +97,69 @@ void solve(vector<string> & ss) {
         complete += ss[i] + get_delimiter(i);
         previous += ss[i].size() + 1;
     }
-    vector<int> sa = suffix_array(complete);
-    vector<int> ss_lcp = lcp(complete, sa);
+    vector<int> sa = suffix_array(complete); vector<int> ss_lcp = lcp(complete, sa);
+    int bound = ss.size() / 2;
 
-    // Build a summary of the solution
-    map<string, set<int>> solutions;
-    for (int i = 0; i < ss_lcp.size(); ++i) {
-        int prefix_length = ss_lcp[i];
-        if (prefix_length == 0) continue;
+    unordered_map<int, int> strings; unordered_set<int> max_pre_idxs; deque<ii> queue;
+    int l = 0, r = 0, max = 0;
+    while (r < ss_lcp.size()) {
+        int pre1_str = string_belonging(begins, sa[r]);
+        int pre2_str = string_belonging(begins, sa[r+1]);
 
-        int prefix1_idx = sa[i+1]; int prefix2_idx = sa[i];
-        int prefix1_str = string_belonging(begins, prefix1_idx);
-        int prefix2_str = string_belonging(begins, prefix2_idx);
-        string prefix = complete.substr(prefix1_idx, prefix_length);
-        // shorter prefixes are also valid
-        for (int j = 0; j < prefix.size(); ++j) {
-            string prefix_shortened = prefix.substr(0, prefix.size()-j);
-            solutions[prefix_shortened].insert(prefix1_str);
-            solutions[prefix_shortened].insert(prefix2_str);
+        // If new item would increase the amount of strings, we have remove from left of queue
+        if (strings.find(string_belonging(begins, sa[r+1])) == strings.end()) {
+            while (l <= r && strings.size() == bound+1) {
+                ii q_front = queue.front();
+                if (q_front.second == l) {
+                    if (max == q_front.first) max_pre_idxs.insert(q_front.second);
+                    else if (max < q_front.first) {
+                        max_pre_idxs.clear(); max_pre_idxs.insert(q_front.second); max = q_front.first;
+                    }
+                    queue.pop_front();
+                }
+                int pre_str = string_belonging(begins, sa[l]);
+                strings[pre_str] -= 1;
+                if (strings[pre_str] == 0) strings.erase(pre_str);
+                l++;
+            }
+        }
+
+        if (strings.find(pre1_str) != strings.end()) strings[pre1_str] += 1;
+        else strings[pre1_str] = 1;
+        if (strings.find(pre2_str) != strings.end()) strings[pre2_str] += 1;
+        else strings[pre2_str] = 1;
+
+        // Update from the rear with new value in case its lower
+        while (!queue.empty() && queue.back().first > ss_lcp[r]) {
+            ii q_back = queue.back();
+            queue.pop_back();
+            if (strings.size() < bound+1) continue;
+            if (max == q_back.first) max_pre_idxs.insert(q_back.second);
+            else if (max < q_back.first) {
+                max_pre_idxs.clear(); max_pre_idxs.insert(q_back.second); max = q_back.first;
+            }
+        }
+        if (pre1_str != pre2_str) {  // Im not comparing prefixes of the same str
+            if (queue.empty()) {
+                queue.push_back(ii(ss_lcp[r], r));
+            } else queue.push_back(ii(ss_lcp[r], r));
+        }
+
+        r++;
+    }
+    if (strings.size() >= bound+1) {
+        for (ii d: queue) {
+            if (max == d.first) max_pre_idxs.insert(d.second);
+            else if (max < d.first) {  // we found a new maximum
+                max_pre_idxs.clear(); max_pre_idxs.insert(d.second); max = d.first;
+            }
         }
     }
-
-    // Get a final solution
-    int longest = 0;
-    for (pair<string, set<int>> s: solutions)
-        if (s.second.size() > ss.size()/2)
-            longest = max(longest, int(s.first.size()));
-
-    if (longest == 0) {
-        cout << "?\n";
-    } else {
-        for (pair<string, set<int>> s: solutions)
-            if (s.first.size() == longest && s.second.size() > ss.size()/2)
-                cout << s.first << "\n";
+    if (max == 0) cout << "?\n";
+    else {
+        set<string> result;
+        for (int index: max_pre_idxs) result.insert(complete.substr(sa[index], ss_lcp[index]));
+        for (string s: result) cout << s << "\n";
     }
 }
 
@@ -149,6 +180,6 @@ int main() {
             cin >> s;
             ss[i] = s;
         }
-        solve(ss);
+        solve2(ss);
     }
 }
